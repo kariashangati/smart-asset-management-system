@@ -1,67 +1,60 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login | Smart Asset Management System</title>
-</head>
-<body>
-    <h1>Login</h1>
+@extends('layouts.auth')
 
-    @if ($errors->any())
-        <div>
-            <strong>Login failed:</strong>
-            <ul>
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
+@section('title', 'Login')
 
-    @if (session('status'))
-        <p>{{ session('status') }}</p>
-    @endif
-
-    <form method="POST" action="{{ url('/login') }}">
-        @csrf
-
-        <div>
-            <label for="email">Email</label><br>
-            <input
-                id="email"
-                type="email"
-                name="email"
-                value="{{ old('email') }}"
-                required
-                autofocus
-            >
+@section('content')
+    <div class="auth-card">
+        <div class="auth-card-header">
+            <h2>Sign In</h2>
+            <p>Access the Smart Asset Management portal.</p>
         </div>
 
-        <br>
+        @if ($errors->any())
+            <div class="form-alert">
+                <strong>Login failed.</strong>
+                <ul>
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
 
-        <div>
-            <label for="password">Password</label><br>
-            <input
-                id="password"
-                type="password"
-                name="password"
-                required
-            >
-        </div>
+        <form method="POST" action="{{ url('/login') }}" class="form-stack">
+            @csrf
 
-        <br>
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input
+                    id="email"
+                    type="email"
+                    name="email"
+                    value="{{ old('email') }}"
+                    required
+                    autofocus
+                    autocomplete="email"
+                >
+            </div>
 
-        <div>
-            <label>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input
+                    id="password"
+                    type="password"
+                    name="password"
+                    required
+                    autocomplete="current-password"
+                >
+            </div>
+
+            <label class="checkbox-row">
                 <input type="checkbox" name="remember">
-                Remember me
+                <span>Remember me</span>
             </label>
-        </div>
 
-        <br>
-
-        <button type="submit">Login</button>
-    </form>
-</body>
-</html>
+            <button type="submit" class="btn btn-primary btn-block">
+                Login
+            </button>
+        </form>
+    </div>
+@endsection

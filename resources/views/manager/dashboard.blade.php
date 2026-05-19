@@ -1,25 +1,40 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Asset Manager Dashboard | Smart Asset Management System</title>
-</head>
-<body>
-    <h1>Asset Manager Dashboard</h1>
+@extends('layouts.manager')
 
-    <p>
-        Welcome, <strong>{{ auth()->user()->name }}</strong>.
-        You are signed in as an asset manager.
-    </p>
+@section('title', 'Asset Manager Dashboard')
+@section('portal_label', 'Asset Manager Portal')
+@section('page_title', 'Dashboard Overview')
+@section('dashboard_url', route('manager.dashboard'))
 
-    <p>
-        This portal will manage assets, tracking, geofences, and alerts.
-    </p>
+@section('content')
+    <section class="stat-grid">
+        <article class="stat-card">
+            <span>Managed Assets</span>
+            <strong>0</strong>
+            <small>Asset module comes later</small>
+        </article>
 
-    <form method="POST" action="{{ route('logout') }}">
-        @csrf
-        <button type="submit">Logout</button>
-    </form>
-</body>
-</html>
+        <article class="stat-card">
+            <span>Tracking</span>
+            <strong>Ready</strong>
+            <small>Map pages come in tracking phase</small>
+        </article>
+
+        <article class="stat-card">
+            <span>Alert Center</span>
+            <strong>Planned</strong>
+            <small>Alert workflow arrives later</small>
+        </article>
+    </section>
+
+    <section class="content-card">
+        <div class="section-header">
+            <div>
+                <h2>Manager Portal Foundation</h2>
+                <p>
+                    This dashboard now uses the reusable manager layout,
+                    shared topbar, footer, and breadcrumbs.
+                </p>
+            </div>
+        </div>
+    </section>
+@endsection

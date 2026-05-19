@@ -24,6 +24,17 @@ Route::middleware(['auth'])->group(function () {
         ->group(function () {
             Route::get('/dashboard', AdminDashboardController::class)
                 ->name('dashboard');
+                Route::post('/ui-test/flash', function () {
+    return redirect()
+        ->route('admin.dashboard')
+        ->with('success', 'SweetAlert2 success notifications are working correctly.');
+})->name('ui-test.flash');
+
+Route::delete('/ui-test/delete', function () {
+    return redirect()
+        ->route('admin.dashboard')
+        ->with('success', 'Delete confirmation modal worked. No real data was deleted.');
+})->name('ui-test.delete');
         });
 
     Route::prefix('manager')
