@@ -5,12 +5,14 @@ use App\Http\Controllers\Manager\DashboardController as ManagerDashboardControll
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\AssetCategoryController;
+use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\UserController;
 
 Route::get('/', function () {
     return view('welcome');
 });
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'active.user'])->group(function () {
     Route::get('/dashboard', function () {
         return redirect('/');
     })
@@ -86,6 +88,46 @@ Route::put('/asset-categories/{assetCategory}', [AssetCategoryController::class,
 Route::delete('/asset-categories/{assetCategory}', [AssetCategoryController::class, 'destroy'])
     ->middleware('permission:asset_categories.delete')
     ->name('asset-categories.destroy');
+
+
+Route::get('/users', [UserController::class, 'index'])
+    ->middleware('permission:users.view')
+    ->name('users.index');
+
+Route::post('/users', [UserController::class, 'store'])
+    ->middleware('permission:users.create')
+    ->name('users.store');
+
+Route::get('/users/{user}', [UserController::class, 'show'])
+    ->middleware('permission:users.view')
+    ->name('users.show');
+
+Route::put('/users/{user}', [UserController::class, 'update'])
+    ->middleware('permission:users.update')
+    ->name('users.update');
+
+Route::patch('/users/{user}/status', [UserController::class, 'toggleStatus'])
+    ->middleware('permission:users.update')
+    ->name('users.toggle-status');
+
+
+Route::get('/roles', [RoleController::class, 'index'])
+    ->middleware('permission:roles.view')
+    ->name('roles.index');
+
+Route::post('/roles', [RoleController::class, 'store'])
+    ->middleware('permission:roles.create')
+    ->name('roles.store');
+
+Route::put('/roles/{role}', [RoleController::class, 'update'])
+    ->middleware('permission:roles.update')
+    ->name('roles.update');
+
+Route::delete('/roles/{role}', [RoleController::class, 'destroy'])
+    ->middleware('permission:roles.delete')
+    ->name('roles.destroy');
+
+
         });
 
     Route::prefix('manager')

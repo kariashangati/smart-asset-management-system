@@ -12,10 +12,23 @@
             Dashboard
         </a>
 
-        <div class="sidebar-group">
-            <span>User Management</span>
-            <small>Users and roles coming in later phases</small>
-        </div>
+        @can('users.view')
+            <a
+                href="{{ route('admin.users.index') }}"
+                class="nav-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}"
+            >
+                Users
+            </a>
+        @endcan
+
+        @can('roles.view')
+            <a
+                href="{{ route('admin.roles.index') }}"
+                class="nav-link {{ request()->routeIs('admin.roles.*') ? 'active' : '' }}"
+            >
+                Roles
+            </a>
+        @endcan
 
         @can('departments.view')
             <a
@@ -37,7 +50,7 @@
 
         <div class="sidebar-group">
             <span>Assets</span>
-            <small>Asset records come in later phases</small>
+            <small>Asset records come in Phase 6</small>
         </div>
 
         <div class="sidebar-group">
