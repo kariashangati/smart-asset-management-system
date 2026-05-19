@@ -1,0 +1,10 @@
+{
+  "name": "Smart Asset Laravel Codespace",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
+  },
+  "forwardPorts": [8000, 8080, 3306]
+}
