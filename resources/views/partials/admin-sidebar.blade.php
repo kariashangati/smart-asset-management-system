@@ -5,7 +5,10 @@
     </div>
 
     <nav class="sidebar-nav">
-        <a href="{{ route('admin.dashboard') }}" class="nav-link active">
+        <a
+            href="{{ route('admin.dashboard') }}"
+            class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}"
+        >
             Dashboard
         </a>
 
@@ -14,9 +17,27 @@
             <small>Users and roles coming in later phases</small>
         </div>
 
+        @can('departments.view')
+            <a
+                href="{{ route('admin.departments.index') }}"
+                class="nav-link {{ request()->routeIs('admin.departments.*') ? 'active' : '' }}"
+            >
+                Departments
+            </a>
+        @endcan
+
+        @can('asset_categories.view')
+            <a
+                href="{{ route('admin.asset-categories.index') }}"
+                class="nav-link {{ request()->routeIs('admin.asset-categories.*') ? 'active' : '' }}"
+            >
+                Asset Categories
+            </a>
+        @endcan
+
         <div class="sidebar-group">
-            <span>Asset Setup</span>
-            <small>Departments, categories, and assets</small>
+            <span>Assets</span>
+            <small>Asset records come in later phases</small>
         </div>
 
         <div class="sidebar-group">
