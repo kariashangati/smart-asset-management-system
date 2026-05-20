@@ -48,15 +48,41 @@
             </a>
         @endcan
 
-        <div class="sidebar-group">
-            <span>Assets</span>
-            <small>Asset records come in Phase 6</small>
-        </div>
+        @can('assets.view')
+            <a
+                href="{{ route('admin.assets.index') }}"
+                class="nav-link {{ request()->routeIs('admin.assets.*') ? 'active' : '' }}"
+            >
+                Assets
+            </a>
+        @endcan
 
-        <div class="sidebar-group">
-            <span>Tracking Devices</span>
-            <small>Devices and assignments</small>
-        </div>
+        @can('devices.view')
+            <a
+                href="{{ route('admin.devices.index') }}"
+                class="nav-link {{ request()->routeIs('admin.devices.*') ? 'active' : '' }}"
+            >
+                Tracker Devices
+            </a>
+        @endcan
+
+        @can('assignments.view')
+            <a
+                href="{{ route('admin.assignments.index') }}"
+                class="nav-link {{ request()->routeIs('admin.assignments.*') ? 'active' : '' }}"
+            >
+                Device Assignments
+            </a>
+        @endcan
+
+        @can('geofences.view')
+            <a
+                href="{{ route('admin.geofences.index') }}"
+                class="nav-link {{ request()->routeIs('admin.geofences.*') ? 'active' : '' }}"
+            >
+                Geofences
+            </a>
+        @endcan
 
         <div class="sidebar-group">
             <span>Monitoring</span>
