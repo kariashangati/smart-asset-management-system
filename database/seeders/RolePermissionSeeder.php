@@ -56,6 +56,11 @@ class RolePermissionSeeder extends Seeder
             'devices.delete',
             'devices.assign',
 
+            // Device Assignments
+'assignments.view',
+'assignments.create',
+'assignments.delete',
+
             // Tracking
             'tracking.live_map.view',
             'tracking.history.view',

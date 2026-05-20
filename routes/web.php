@@ -7,7 +7,10 @@ use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\AssetCategoryController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\UserController;
-
+use App\Http\Controllers\Admin\AssetController;
+use App\Http\Controllers\Admin\TrackerDeviceController;
+use App\Http\Controllers\Admin\DeviceAssignmentController;
+use App\Http\Controllers\Admin\GeofenceController;
 Route::get('/', function () {
     return view('welcome');
 });
@@ -126,6 +129,34 @@ Route::put('/roles/{role}', [RoleController::class, 'update'])
 Route::delete('/roles/{role}', [RoleController::class, 'destroy'])
     ->middleware('permission:roles.delete')
     ->name('roles.destroy');
+
+    Route::get('/assets', [AssetController::class, 'index'])->middleware('permission:assets.view')->name('assets.index');
+Route::get('/assets/create', [AssetController::class, 'create'])->middleware('permission:assets.create')->name('assets.create');
+Route::post('/assets', [AssetController::class, 'store'])->middleware('permission:assets.create')->name('assets.store');
+Route::get('/assets/{asset}', [AssetController::class, 'show'])->middleware('permission:assets.view')->name('assets.show');
+Route::get('/assets/{asset}/edit', [AssetController::class, 'edit'])->middleware('permission:assets.update')->name('assets.edit');
+Route::put('/assets/{asset}', [AssetController::class, 'update'])->middleware('permission:assets.update')->name('assets.update');
+Route::delete('/assets/{asset}', [AssetController::class, 'destroy'])->middleware('permission:assets.delete')->name('assets.destroy');
+
+Route::get('/devices', [TrackerDeviceController::class, 'index'])->middleware('permission:devices.view')->name('devices.index');
+Route::get('/devices/create', [TrackerDeviceController::class, 'create'])->middleware('permission:devices.create')->name('devices.create');
+Route::post('/devices', [TrackerDeviceController::class, 'store'])->middleware('permission:devices.create')->name('devices.store');
+Route::get('/devices/{trackerDevice}', [TrackerDeviceController::class, 'show'])->middleware('permission:devices.view')->name('devices.show');
+Route::get('/devices/{trackerDevice}/edit', [TrackerDeviceController::class, 'edit'])->middleware('permission:devices.update')->name('devices.edit');
+Route::put('/devices/{trackerDevice}', [TrackerDeviceController::class, 'update'])->middleware('permission:devices.update')->name('devices.update');
+Route::delete('/devices/{trackerDevice}', [TrackerDeviceController::class, 'destroy'])->middleware('permission:devices.delete')->name('devices.destroy');
+
+Route::get('/assignments', [DeviceAssignmentController::class, 'index'])->middleware('permission:assignments.view')->name('assignments.index');
+Route::get('/assignments/create', [DeviceAssignmentController::class, 'create'])->middleware('permission:assignments.create')->name('assignments.create');
+Route::post('/assignments', [DeviceAssignmentController::class, 'store'])->middleware('permission:assignments.create')->name('assignments.store');
+Route::delete('/assignments/{assignment}', [DeviceAssignmentController::class, 'destroy'])->middleware('permission:assignments.delete')->name('assignments.destroy');
+
+Route::get('/geofences', [GeofenceController::class, 'index'])->middleware('permission:geofences.view')->name('geofences.index');
+Route::get('/geofences/create', [GeofenceController::class, 'create'])->middleware('permission:geofences.create')->name('geofences.create');
+Route::post('/geofences', [GeofenceController::class, 'store'])->middleware('permission:geofences.create')->name('geofences.store');
+Route::get('/geofences/{geofence}/edit', [GeofenceController::class, 'edit'])->middleware('permission:geofences.update')->name('geofences.edit');
+Route::put('/geofences/{geofence}', [GeofenceController::class, 'update'])->middleware('permission:geofences.update')->name('geofences.update');
+Route::delete('/geofences/{geofence}', [GeofenceController::class, 'destroy'])->middleware('permission:geofences.delete')->name('geofences.destroy');
 
 
         });
