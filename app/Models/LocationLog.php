@@ -29,11 +29,17 @@ class LocationLog extends Model
         'received_at' => 'datetime',
     ];
 
+    /**
+     * Device that sent the location
+     */
     public function trackerDevice()
     {
         return $this->belongsTo(TrackerDevice::class);
     }
 
+    /**
+     * Asset related to this log
+     */
     public function asset()
     {
         return $this->belongsTo(Asset::class);

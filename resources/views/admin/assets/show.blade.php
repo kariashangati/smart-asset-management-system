@@ -39,6 +39,32 @@
                 @else
                     <p>No active perimeter defined.</p>
                 @endif
+
+                {{-- NEW SECTION: Latest Location (added after geofence details) --}}
+                <hr>
+                <h5>Latest Location</h5>
+                @php
+                    $latestLocation = $asset->latestLocation;
+                @endphp
+                @if($latestLocation)
+                    <div class="detail-grid" style="margin-top: 12px;">
+                        <div class="detail-item">
+                            <span>Coordinates</span>
+                            <strong>{{ $latestLocation->latitude }}, {{ $latestLocation->longitude }}</strong>
+                        </div>
+                        <div class="detail-item">
+                            <span>Last recorded</span>
+                            <strong>{{ $latestLocation->last_recorded_at ? $latestLocation->last_recorded_at->format('d M Y H:i:s') : '—' }}</strong>
+                        </div>
+                        <div class="detail-item">
+                            <span>Motion detected</span>
+                            <strong>{{ $latestLocation->last_motion_detected ? 'Yes' : 'No' }}</strong>
+                        </div>
+                    </div>
+                    <a href="{{ route('admin.tracking.asset-history', $asset) }}" class="btn btn-outline btn-sm mt-3">View full history</a>
+                @else
+                    <p>No tracking data yet. Assign a tracker device and simulate location updates.</p>
+                @endif
             </div>
         </div>
     </div>

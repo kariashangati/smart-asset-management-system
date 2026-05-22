@@ -27,33 +27,63 @@ class Asset extends Model
         'purchase_date' => 'date',
     ];
 
+    /**
+     * Asset category
+     */
     public function category()
     {
-        return $this->belongsTo(AssetCategory::class, 'asset_category_id');
+        return $this->belongsTo(
+            AssetCategory::class,
+            'asset_category_id'
+        );
     }
 
+    /**
+     * Department
+     */
     public function department()
     {
         return $this->belongsTo(Department::class);
     }
 
+    /**
+     * Device assignments
+     */
     public function assignments()
     {
         return $this->hasMany(AssetDeviceAssignment::class);
     }
 
+    /**
+     * Current active assignment
+     */
     public function activeAssignment()
     {
-        return $this->hasOne(AssetDeviceAssignment::class)->where('is_active', true);
+        return $this->hasOne(AssetDeviceAssignment::class)
+            ->where('is_active', true);
     }
 
+    /**
+     * Geofences
+     */
     public function geofences()
     {
         return $this->hasMany(Geofence::class);
     }
 
+    /**
+     * Alerts
+     */
     public function alerts()
     {
         return $this->hasMany(Alert::class);
+    }
+
+    /**
+     * Location history logs
+     */
+    public function locationLogs()
+    {
+        return $this->hasMany(LocationLog::class);
     }
 }

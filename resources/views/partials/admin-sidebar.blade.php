@@ -84,11 +84,33 @@
             </a>
         @endcan
 
-        <div class="sidebar-group">
-            <span>Monitoring</span>
-            <small>Map, geofences, and alerts</small>
-        </div>
+        {{-- MONITORING GROUP --}}
+        @canany(['tracking.live_map.view', 'tracking.history.view'])
+            <div class="sidebar-group">
+                <span>Monitoring</span>
+                <small>Real-time and logs</small>
+            </div>
 
+            @can('tracking.live_map.view')
+                <a
+                    href="{{ route('admin.tracking.live-map') }}"
+                    class="nav-link {{ request()->routeIs('admin.tracking.live-map') ? 'active' : '' }}"
+                >
+                    Live Map
+                </a>
+            @endcan
+
+            @can('tracking.history.view')
+                <a
+                    href="{{ route('admin.tracking.history') }}"
+                    class="nav-link {{ request()->routeIs('admin.tracking.history') ? 'active' : '' }}"
+                >
+                    Location History
+                </a>
+            @endcan
+        @endcanany
+
+        {{-- REPORTS PLACEHOLDER --}}
         <div class="sidebar-group">
             <span>Reports</span>
             <small>Asset, tracking, and alert reports</small>

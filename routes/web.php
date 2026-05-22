@@ -159,6 +159,14 @@ Route::put('/geofences/{geofence}', [GeofenceController::class, 'update'])->midd
 Route::delete('/geofences/{geofence}', [GeofenceController::class, 'destroy'])->middleware('permission:geofences.delete')->name('geofences.destroy');
 
 
+Route::prefix('tracking')->name('tracking.')->group(function () {
+    Route::get('/live-map', [App\Http\Controllers\Admin\TrackingController::class, 'liveMap'])->name('live-map');
+    Route::get('/history', [App\Http\Controllers\Admin\TrackingController::class, 'history'])->name('history');
+    Route::get('/asset-history/{asset}', [App\Http\Controllers\Admin\TrackingController::class, 'assetHistory'])->name('asset-history');
+});
+
+
+
         });
 
     Route::prefix('manager')
@@ -168,7 +176,22 @@ Route::delete('/geofences/{geofence}', [GeofenceController::class, 'destroy'])->
             'permission:dashboard.manager.view',
         ])
         ->group(function () {
+
+Route::prefix('tracking')->name('tracking.')->group(function () {
+    Route::get('/live-map', [App\Http\Controllers\Manager\TrackingController::class, 'liveMap'])
+        ->middleware('permission:tracking.live_map.view')
+        ->name('live-map');
+    Route::get('/history', [App\Http\Controllers\Manager\TrackingController::class, 'history'])
+        ->middleware('permission:tracking.history.view')
+        ->name('history');
+    Route::get('/asset-history/{asset}', [App\Http\Controllers\Manager\TrackingController::class, 'assetHistory'])
+        ->middleware('permission:tracking.history.view')
+        ->name('asset-history');
+});
+
             Route::get('/dashboard', ManagerDashboardController::class)
                 ->name('dashboard');
+
+
         });
 });
