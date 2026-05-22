@@ -5,6 +5,7 @@
     </div>
 
     <nav class="sidebar-nav">
+        {{-- Dashboard --}}
         <a
             href="{{ route('manager.dashboard') }}"
             class="nav-link {{ request()->routeIs('manager.dashboard') ? 'active' : '' }}"
@@ -12,7 +13,7 @@
             Dashboard
         </a>
 
-        {{-- Tracking Group (uses existing routes from Phase 8) --}}
+        {{-- Tracking --}}
         @canany(['tracking.live_map.view', 'tracking.history.view'])
             <div class="sidebar-group">
                 <span>Tracking</span>
@@ -38,20 +39,30 @@
             @endcan
         @endcanany
 
-        {{-- Placeholder groups for future modules (no links) --}}
+        {{-- Assets (Placeholder – no manager asset routes yet) --}}
         <div class="sidebar-group">
             <span>Assets</span>
             <small>Asset list and registration</small>
         </div>
 
-        <div class="sidebar-group">
-            <span>Geofences</span>
-            <small>Allowed asset zones</small>
-        </div>
+        {{-- Geofences (actual route) --}}
+        @can('geofences.view')
+            <a
+                href="{{ route('manager.geofences.index') }}"
+                class="nav-link {{ request()->routeIs('manager.geofences.*') ? 'active' : '' }}"
+            >
+                Geofences
+            </a>
+        @endcan
 
-        <div class="sidebar-group">
-            <span>Alerts</span>
-            <small>Movement and perimeter alerts</small>
-        </div>
+        {{-- Alerts (actual route) --}}
+        @can('alerts.view')
+            <a
+                href="{{ route('manager.alerts.index') }}"
+                class="nav-link {{ request()->routeIs('manager.alerts.*') ? 'active' : '' }}"
+            >
+                Alerts
+            </a>
+        @endcan
     </nav>
 </aside>
