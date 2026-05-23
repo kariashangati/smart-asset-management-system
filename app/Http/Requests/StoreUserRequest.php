@@ -23,6 +23,36 @@ class StoreUserRequest extends FormRequest
             'status' => ['required', Rule::in(User::STATUSES)],
             'role' => ['required', 'string', 'exists:roles,name'],
             'password' => ['required', 'confirmed', Password::defaults()],
+            // NEW: Department assignment validation
+            'department_id' => [
+                Rule::requiredIf(fn () => $this->input('role') === 'asset_manager'),
+                'nullable',
+                'integer',
+                'exists:departments,id',
+            ],
         ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'department_id.required' => 'Asset managers must be assigned to a department.',
+            'department_id.exists' => 'The selected department does not exist.',
+            'department_id.integer' => 'Department must be a valid selection.',
+        ];
+    }
+
+    /**
+     * Prepare the data for validation.
+     * Admins should not have department_id set
+     */
+    protected function prepareForValidation(): void
+    {
+        // If role is admin, clear department_id
+        if ($this->input('role') === 'admin') {
+            $this->merge([
+                'department_id' => null,
+            ]);
+        }
     }
 }
