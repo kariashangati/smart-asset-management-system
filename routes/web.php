@@ -46,6 +46,24 @@ Route::middleware(['auth', 'active.user'])->group(function () {
         ])
         ->group(function () {
 
+        /*
+|--------------------------------------------------------------------------
+| Reports (Admin)
+|--------------------------------------------------------------------------
+*/
+Route::prefix('reports')->name('reports.')->group(function () {
+    Route::get('/assets', [App\Http\Controllers\Admin\ReportController::class, 'assets'])->name('assets');
+    Route::get('/tracking', [App\Http\Controllers\Admin\ReportController::class, 'tracking'])->name('tracking');
+    Route::get('/alerts', [App\Http\Controllers\Admin\ReportController::class, 'alerts'])->name('alerts');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Audit Logs (Admin)
+|--------------------------------------------------------------------------
+*/
+Route::resource('audit-logs', App\Http\Controllers\Admin\AuditLogController::class)->only(['index']);
+
             Route::get('/dashboard', AdminDashboardController::class)
                 ->name('dashboard');
 
@@ -370,6 +388,9 @@ Route::middleware(['auth', 'active.user'])->group(function () {
             */
             Route::resource('geofences', ManagerGeofenceController::class)
                 ->except(['show']);
+
+
+                
 
             /*
             |--------------------------------------------------------------------------

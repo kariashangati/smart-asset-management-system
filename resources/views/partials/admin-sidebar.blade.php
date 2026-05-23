@@ -110,10 +110,40 @@
             @endcan
         @endcanany
 
-        {{-- REPORTS PLACEHOLDER --}}
-        <div class="sidebar-group">
-            <span>Reports</span>
-            <small>Asset, tracking, and alert reports</small>
-        </div>
+        {{-- REPORTS GROUP --}}
+        @can('reports.view')
+            <div class="sidebar-group">
+                <span>Reports</span>
+                <small>Asset, tracking, and alert reports</small>
+            </div>
+            <a
+                href="{{ route('admin.reports.assets') }}"
+                class="nav-link {{ request()->routeIs('admin.reports.assets') ? 'active' : '' }}"
+            >
+                Asset Report
+            </a>
+            <a
+                href="{{ route('admin.reports.tracking') }}"
+                class="nav-link {{ request()->routeIs('admin.reports.tracking') ? 'active' : '' }}"
+            >
+                Tracking Report
+            </a>
+            <a
+                href="{{ route('admin.reports.alerts') }}"
+                class="nav-link {{ request()->routeIs('admin.reports.alerts') ? 'active' : '' }}"
+            >
+                Alert Report
+            </a>
+        @endcan
+
+        {{-- AUDIT LOGS --}}
+        @can('audit_logs.view')
+            <a
+                href="{{ route('admin.audit-logs.index') }}"
+                class="nav-link {{ request()->routeIs('admin.audit-logs.*') ? 'active' : '' }}"
+            >
+                Audit Logs
+            </a>
+        @endcan
     </nav>
 </aside>
