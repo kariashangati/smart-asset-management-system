@@ -88,4 +88,13 @@ class Asset extends Model
     {
         return $this->hasMany(LocationLog::class);
     }
+
+    /**
+     * Latest location for this asset
+     * PHASE 1: Fix missing relationship that was referenced in views
+     */
+    public function latestLocation()
+    {
+        return $this->hasOne(AssetLatestLocation::class);
+    }
 }
