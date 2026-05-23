@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
+use App\Models\Department;
 use App\Models\User;
 use App\Services\UserService;
 use Illuminate\Http\RedirectResponse;
@@ -16,7 +17,7 @@ class UserController extends Controller
     public function index(): View
     {
         $users = User::query()
-            ->with('roles')
+            ->with('roles', 'department')
             ->latest()
             ->get();
 
@@ -24,12 +25,16 @@ class UserController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('admin.users.index', compact('users', 'roles'));
+        $departments = Department::query()
+            ->orderBy('name')
+            ->get();
+
+        return view('admin.users.index', compact('users', 'roles', 'departments'));
     }
 
     public function show(User $user): View
     {
-        $user->load('roles', 'permissions');
+        $user->load('roles', 'permissions', 'department');
 
         return view('admin.users.show', compact('user'));
     }
