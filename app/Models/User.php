@@ -5,10 +5,12 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 use App\Traits\LogsActivity;
+
 class User extends Authenticatable
 {
     use LogsActivity;
@@ -34,6 +36,7 @@ class User extends Authenticatable
         'phone',
         'status',
         'password',
+        'department_id',
     ];
 
     /**
@@ -57,6 +60,30 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Get the department this user is assigned to
+     */
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
+    }
+
+    /**
+     * Check if user is an asset manager
+     */
+    public function isDepartmentManager(): bool
+    {
+        return $this->hasRole('asset_manager');
+    }
+
+    /**
+     * Check if user is an admin
+     */
+    public function isAdmin(): bool
+    {
+        return $this->hasRole('admin');
     }
 
     public function isActive(): bool
