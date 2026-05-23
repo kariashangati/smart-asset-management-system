@@ -35,6 +35,7 @@
                         <th>Email</th>
                         <th>Phone</th>
                         <th>Role</th>
+                        <th>Department</th>
                         <th>Status</th>
                         <th>Created</th>
                         <th>Actions</th>
@@ -55,6 +56,15 @@
                                         <span class="badge badge-warning">No role</span>
                                     @endforelse
                                 </div>
+                            </td>
+                            <td>
+                                @if ($user->isDepartmentManager() && $user->department)
+                                    <span class="badge badge-info">{{ $user->department->name }}</span>
+                                @elseif ($user->isAdmin())
+                                    <span class="badge badge-soft">All Departments</span>
+                                @else
+                                    <span class="text-muted">—</span>
+                                @endif
                             </td>
                             <td>
                                 @if ($user->isActive())
@@ -117,7 +127,7 @@
                                     <div class="modal-header">
                                         <div>
                                             <h2>Edit User</h2>
-                                            <p>Update account details, status, role, or password.</p>
+                                            <p>Update account details, status, role, or department assignment.</p>
                                         </div>
 
                                         <button type="button" class="icon-button" data-modal-close>&times;</button>
@@ -195,6 +205,32 @@
                                                     </select>
                                                 </div>
 
+                                                <div class="form-group field-span-2" id="edit_department_field_{{ $user->id }}" style="display: none;">
+                                                    <label for="edit_department_{{ $user->id }}">
+                                                        Department
+                                                        <span class="text-required">*</span>
+                                                        <small class="form-hint">(Required for Asset Managers)</small>
+                                                    </label>
+                                                    <select id="edit_department_{{ $user->id }}" name="department_id">
+                                                        <option value="">Select department</option>
+                                                        @foreach ($departments as $department)
+                                                            <option
+                                                                value="{{ $department->id }}"
+                                                                @selected(
+                                                                    (old('_modal') === 'edit-user-modal-'.$user->id
+                                                                        ? old('department_id')
+                                                                        : $user->department_id) == $department->id
+                                                                )
+                                                            >
+                                                                {{ $department->name }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                    @error('department_id')
+                                                        <span class="form-error">{{ $message }}</span>
+                                                    @enderror
+                                                </div>
+
                                                 <div class="form-group">
                                                     <label for="edit_password_{{ $user->id }}">New Password</label>
                                                     <input
@@ -227,6 +263,27 @@
                                     </form>
                                 </div>
                             </div>
+
+                            <script>
+                                (function() {
+                                    const roleSelect = document.getElementById('edit_role_{{ $user->id }}');
+                                    const deptField = document.getElementById('edit_department_field_{{ $user->id }}');
+                                    const deptSelect = document.getElementById('edit_department_{{ $user->id }}');
+                                    
+                                    function toggleDepartmentField() {
+                                        if (roleSelect.value === 'asset_manager') {
+                                            deptField.style.display = 'block';
+                                            deptSelect.required = true;
+                                        } else {
+                                            deptField.style.display = 'none';
+                                            deptSelect.required = false;
+                                        }
+                                    }
+                                    
+                                    roleSelect.addEventListener('change', toggleDepartmentField);
+                                    toggleDepartmentField();
+                                })();
+                            </script>
                         @endcan
                     @endforeach
                 </tbody>
@@ -240,7 +297,7 @@
                 <div class="modal-header">
                     <div>
                         <h2>Create User</h2>
-                        <p>Add a user and assign the correct system role.</p>
+                        <p>Add a user and assign the correct system role and department.</p>
                     </div>
 
                     <button type="button" class="icon-button" data-modal-close>&times;</button>
@@ -325,6 +382,28 @@
                                 </select>
                             </div>
 
+                            <div class="form-group field-span-2" id="create_department_field" style="display: none;">
+                                <label for="create_department">
+                                    Department
+                                    <span class="text-required">*</span>
+                                    <small class="form-hint">(Required for Asset Managers)</small>
+                                </label>
+                                <select id="create_department" name="department_id">
+                                    <option value="">Select department</option>
+                                    @foreach ($departments as $department)
+                                        <option
+                                            value="{{ $department->id }}"
+                                            @selected(old('_modal') === 'create-user-modal' && old('department_id') == $department->id)
+                                        >
+                                            {{ $department->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('department_id')
+                                    <span class="form-error">{{ $message }}</span>
+                                @enderror
+                            </div>
+
                             <div class="form-group">
                                 <label for="create_password">Password</label>
                                 <input
@@ -359,5 +438,26 @@
                 </form>
             </div>
         </div>
+
+        <script>
+            (function() {
+                const roleSelect = document.getElementById('create_role');
+                const deptField = document.getElementById('create_department_field');
+                const deptSelect = document.getElementById('create_department');
+                
+                function toggleDepartmentField() {
+                    if (roleSelect.value === 'asset_manager') {
+                        deptField.style.display = 'block';
+                        deptSelect.required = true;
+                    } else {
+                        deptField.style.display = 'none';
+                        deptSelect.required = false;
+                    }
+                }
+                
+                roleSelect.addEventListener('change', toggleDepartmentField);
+                toggleDepartmentField();
+            })();
+        </script>
     @endcan
 @endsection
