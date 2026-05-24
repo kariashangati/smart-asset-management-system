@@ -3,52 +3,54 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Asset;
 use App\Models\AlertRule;
-use App\Http\Requests\StoreAlertRuleRequest;
-use App\Http\Requests\UpdateAlertRuleRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class AlertRuleController extends Controller
 {
     /**
-     * List alert rules
+     * Get all alert rules
      * GET /api/alert-rules
      */
     public function index(Request $request): JsonResponse
     {
-        $query = AlertRule::query();
+        $this->authorize('viewAny', AlertRule::class);
 
-        if ($request->has('asset_id')) {
-            $query->where('asset_id', $request->asset_id);
-        }
-
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
-        }
-
-        $rules = $query->paginate($request->per_page ?? 15);
+        $rules = AlertRule::query()
+            ->where('is_active', true)
+            ->orderBy('created_at', 'desc')
+            ->paginate($request->input('per_page', 15));
 
         return response()->json([
             'success' => true,
-            'data' => $rules->items(),
-            'pagination' => [
-                'total' => $rules->total(),
-                'per_page' => $rules->perPage(),
-                'current_page' => $rules->currentPage(),
-            ],
+            'data' => $rules,
         ]);
     }
 
     /**
-     * Create alert rule
+     * Store new alert rule
      * POST /api/alert-rules
      */
-    public function store(StoreAlertRuleRequest $request): JsonResponse
+    public function store(Request $request): JsonResponse
     {
+        $this->authorize('create', AlertRule::class);
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'asset_type' => 'required|string',
+            'condition_type' => 'required|in:equals,greater_than,less_than,greater_or_equal,less_or_equal,not_equal,contains,not_contains,in_range,regex',
+            'condition_value' => 'required|string',
+            'threshold_unit' => 'nullable|string',
+            'severity' => 'required|in:info,warning,critical',
+            'action_type' => 'nullable|string',
+            'notification_channels' => 'nullable|array',
+            'is_active' => 'boolean',
+        ]);
+
         $rule = AlertRule::create([
-            ...$request->validated(),
+            ...validated,
             'created_by' => auth()->id(),
         ]);
 
@@ -60,12 +62,38 @@ class AlertRuleController extends Controller
     }
 
     /**
+     * Get specific alert rule
+     * GET /api/alert-rules/{id}
+     */
+    public function show(AlertRule $rule): JsonResponse
+    {
+        $this->authorize('view', $rule);
+
+        return response()->json([
+            'success' => true,
+            'data' => $rule,
+        ]);
+    }
+
+    /**
      * Update alert rule
      * PUT /api/alert-rules/{id}
      */
-    public function update(UpdateAlertRuleRequest $request, AlertRule $rule): JsonResponse
+    public function update(Request $request, AlertRule $rule): JsonResponse
     {
-        $rule->update($request->validated());
+        $this->authorize('update', $rule);
+
+        $validated = $request->validate([
+            'name' => 'string|max:255',
+            'description' => 'nullable|string',
+            'condition_type' => 'in:equals,greater_than,less_than,greater_or_equal,less_or_equal,not_equal,contains,not_contains,in_range,regex',
+            'condition_value' => 'string',
+            'severity' => 'in:info,warning,critical',
+            'notification_channels' => 'nullable|array',
+            'is_active' => 'boolean',
+        ]);
+
+        $rule->update($validated);
 
         return response()->json([
             'success' => true,
@@ -80,11 +108,30 @@ class AlertRuleController extends Controller
      */
     public function destroy(AlertRule $rule): JsonResponse
     {
+        $this->authorize('delete', $rule);
+
         $rule->delete();
 
         return response()->json([
             'success' => true,
             'message' => 'Alert rule deleted successfully',
+        ]);
+    }
+
+    /**
+     * Toggle alert rule active status
+     * PATCH /api/alert-rules/{id}/toggle
+     */
+    public function toggle(AlertRule $rule): JsonResponse
+    {
+        $this->authorize('update', $rule);
+
+        $rule->toggle();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Alert rule toggled successfully',
+            'data' => $rule,
         ]);
     }
 }

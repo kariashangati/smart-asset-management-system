@@ -2,39 +2,36 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Models\Asset;
-use App\Models\Alert;
-use App\Models\LocationLog;
+use App\Http\Controllers\Controller;
+use App\Services\ReportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\AssetsExport;
+use App\Exports\AlertsExport;
 
 class ReportController extends Controller
 {
+    public function __construct(private ReportService $reportService)
+    {
+    }
+
     /**
      * Get asset summary report
      * GET /api/reports/assets
      */
     public function assetSummary(Request $request): JsonResponse
     {
-        $this->authorize('viewAny', Asset::class);
+        $this->authorize('viewAny', \App\Models\Asset::class);
 
-        $totalAssets = Asset::count();
-        $activeAssets = Asset::where('status', 'active')->count();
-        $totalValue = Asset::sum('asset_value');
-        $assetsByType = Asset::groupBy('asset_type')->selectRaw('asset_type, COUNT(*) as count')->get();
-        $assetsByStatus = Asset::groupBy('status')->selectRaw('status, COUNT(*) as count')->get();
+        $filters = $request->only('department_id', 'status', 'asset_type');
+        $report = $this->reportService->getAssetSummaryReport($filters);
 
         return response()->json([
             'success' => true,
-            'data' => [
-                'total_assets' => $totalAssets,
-                'active_assets' => $activeAssets,
-                'total_asset_value' => $totalValue,
-                'by_type' => $assetsByType,
-                'by_status' => $assetsByStatus,
-            ],
+            'data' => $report,
         ]);
     }
 
@@ -44,126 +41,91 @@ class ReportController extends Controller
      */
     public function alertsReport(Request $request): JsonResponse
     {
-        $request->validate([
-            'from' => 'nullable|date',
-            'to' => 'nullable|date',
-            'asset_id' => 'nullable|exists:assets,id',
-        ]);
+        $this->authorize('viewAny', \App\Models\Alert::class);
 
-        $query = Alert::query();
-
-        if ($request->from) {
-            $query->where('triggered_at', '>=', $request->from);
-        }
-        if ($request->to) {
-            $query->where('triggered_at', '<=', $request->to);
-        }
-        if ($request->asset_id) {
-            $query->where('asset_id', $request->asset_id);
-        }
-
-        $totalAlerts = $query->count();
-        $unresolvedAlerts = $query->where('status', '!=', 'resolved')->count();
-        $alertsBySeverity = $query->selectRaw('severity, COUNT(*) as count')->groupBy('severity')->get();
-        $alertsByType = $query->selectRaw('alert_type, COUNT(*) as count')->groupBy('alert_type')->get();
+        $filters = $request->only('date_from', 'date_to', 'severity', 'status', 'department_id');
+        $report = $this->reportService->getAlertsReport($filters);
 
         return response()->json([
             'success' => true,
-            'data' => [
-                'total_alerts' => $totalAlerts,
-                'unresolved_alerts' => $unresolvedAlerts,
-                'by_severity' => $alertsBySeverity,
-                'by_type' => $alertsByType,
-            ],
+            'data' => $report,
         ]);
     }
 
     /**
-     * Get location tracking report
+     * Get tracking report
      * GET /api/reports/tracking
      */
     public function trackingReport(Request $request): JsonResponse
     {
-        $request->validate([
-            'asset_id' => 'nullable|exists:assets,id',
-            'from' => 'nullable|date',
-            'to' => 'nullable|date',
-        ]);
+        $this->authorize('viewAny', \App\Models\Asset::class);
 
-        $query = LocationLog::query();
-
-        if ($request->asset_id) {
-            $query->where('asset_id', $request->asset_id);
-        }
-        if ($request->from) {
-            $query->where('recorded_at', '>=', $request->from);
-        }
-        if ($request->to) {
-            $query->where('recorded_at', '<=', $request->to);
-        }
-
-        $totalLogs = $query->count();
-        $avgSpeed = $query->avg('speed');
-        $motionDetected = $query->where('motion_detected', true)->count();
+        $filters = $request->only('department_id', 'date_from', 'date_to');
+        $report = $this->reportService->getTrackingReport($filters);
 
         return response()->json([
             'success' => true,
-            'data' => [
-                'total_location_logs' => $totalLogs,
-                'average_speed' => round($avgSpeed ?? 0, 2),
-                'motion_detected_count' => $motionDetected,
-            ],
+            'data' => $report,
         ]);
     }
 
     /**
-     * Export assets report as PDF
-     * GET /api/reports/assets/export/pdf
+     * Get asset values report
+     * GET /api/reports/asset-values
      */
-    public function exportAssetsPdf(): \Illuminate\Http\Response
+    public function assetValuesReport(Request $request): JsonResponse
     {
-        $this->authorize('viewAny', Asset::class);
+        $this->authorize('viewAny', \App\Models\AssetValue::class);
 
-        $assets = Asset::with('department', 'trackerDevice')->get();
+        $filters = $request->only('department_id');
+        $report = $this->reportService->getAssetValuesReport($filters);
 
-        $pdf = Pdf::loadView('reports.assets', ['assets' => $assets]);
-
-        return $pdf->download('assets-report.pdf');
+        return response()->json([
+            'success' => true,
+            'data' => $report,
+        ]);
     }
 
     /**
-     * Export assets report as CSV
-     * GET /api/reports/assets/export/csv
+     * Export assets to PDF
+     * GET /api/reports/export/pdf
      */
-    public function exportAssetsCsv()
+    public function exportAssetsPdf(Request $request): Response
     {
-        $this->authorize('viewAny', Asset::class);
+        $this->authorize('viewAny', \App\Models\Asset::class);
 
-        return Excel::download(
-            new \App\Exports\AssetsExport(),
-            'assets-report.csv'
-        );
+        $filters = $request->only('department_id', 'status');
+        $report = $this->reportService->getAssetSummaryReport($filters);
+
+        $pdf = Pdf::loadView('reports.assets-pdf', ['report' => $report]);
+        return $pdf->download('assets-report-' . now()->format('Y-m-d') . '.pdf');
     }
 
     /**
-     * Export alerts report as PDF
-     * GET /api/reports/alerts/export/pdf
+     * Export assets to CSV
+     * GET /api/reports/export/csv
      */
-    public function exportAlertsPdf(Request $request): \Illuminate\Http\Response
+    public function exportAssetsCsv(Request $request): Response
     {
-        $query = Alert::with('asset');
+        $this->authorize('viewAny', \App\Models\Asset::class);
 
-        if ($request->from) {
-            $query->where('triggered_at', '>=', $request->from);
-        }
-        if ($request->to) {
-            $query->where('triggered_at', '<=', $request->to);
-        }
+        $filters = $request->only('department_id', 'status');
 
-        $alerts = $query->get();
+        return Excel::download(new AssetsExport($filters), 'assets-report-' . now()->format('Y-m-d') . '.csv');
+    }
 
-        $pdf = Pdf::loadView('reports.alerts', ['alerts' => $alerts]);
+    /**
+     * Export alerts to PDF
+     * GET /api/reports/export/alerts-pdf
+     */
+    public function exportAlertsPdf(Request $request): Response
+    {
+        $this->authorize('viewAny', \App\Models\Alert::class);
 
-        return $pdf->download('alerts-report.pdf');
+        $filters = $request->only('date_from', 'date_to', 'severity');
+        $report = $this->reportService->getAlertsReport($filters);
+
+        $pdf = Pdf::loadView('reports.alerts-pdf', ['report' => $report]);
+        return $pdf->download('alerts-report-' . now()->format('Y-m-d') . '.pdf');
     }
 }

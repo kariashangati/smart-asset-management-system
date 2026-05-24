@@ -15,17 +15,22 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->text('description')->nullable();
-            $table->string('rule_type');
-            $table->json('condition');
-            $table->float('threshold_value');
-            $table->string('action');
-            $table->enum('status', ['active', 'inactive'])->default('active');
+            $table->string('asset_type');
+            $table->string('condition_type');
+            $table->text('condition_value');
+            $table->string('threshold_unit')->nullable();
+            $table->enum('severity', ['info', 'warning', 'critical'])->default('warning');
+            $table->string('action_type')->nullable();
+            $table->json('notification_channels')->nullable();
+            $table->boolean('is_active')->default(true);
             $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
-            $table->foreignId('asset_id')->nullable()->constrained()->onDelete('cascade');
-            $table->foreignId('department_id')->nullable()->constrained()->onDelete('cascade');
             $table->timestamps();
-            $table->index(['asset_id', 'status']);
-            $table->index(['department_id', 'status']);
+
+            // Indexes
+            $table->index('asset_type');
+            $table->index('severity');
+            $table->index('is_active');
+            $table->index('created_by');
         });
     }
 
