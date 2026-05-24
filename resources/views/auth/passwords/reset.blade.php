@@ -1,17 +1,17 @@
 @extends('layouts.auth')
 
-@section('title', 'Login')
+@section('title', 'Reset Password')
 
 @section('content')
     <div class="auth-card">
         <div class="auth-card-header">
-            <h2>Sign In</h2>
-            <p>Access the Smart Asset Management portal.</p>
+            <h2>Reset Password</h2>
+            <p>Enter your new password below.</p>
         </div>
 
         @if ($errors->any())
             <div class="form-alert alert-danger">
-                <strong>Login failed.</strong>
+                <strong>Error</strong>
                 <ul>
                     @foreach ($errors->all() as $error)
                         <li>{{ $error }}</li>
@@ -20,8 +20,10 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ url('/login') }}" class="form-stack">
+        <form method="POST" action="{{ route('password.update') }}" class="form-stack">
             @csrf
+
+            <input type="hidden" name="token" value="{{ $token }}">
 
             <div class="form-group">
                 <label for="email">Email Address</label>
@@ -29,10 +31,9 @@
                     id="email"
                     type="email"
                     name="email"
-                    value="{{ old('email') }}"
+                    value="{{ old('email', $email) }}"
                     required
                     autofocus
-                    autocomplete="email"
                     class="form-control"
                 >
                 @error('email')
@@ -41,13 +42,13 @@
             </div>
 
             <div class="form-group">
-                <label for="password">Password</label>
+                <label for="password">New Password</label>
                 <input
                     id="password"
                     type="password"
                     name="password"
                     required
-                    autocomplete="current-password"
+                    autocomplete="new-password"
                     class="form-control"
                 >
                 @error('password')
@@ -55,20 +56,24 @@
                 @enderror
             </div>
 
-            <label class="checkbox-row">
-                <input type="checkbox" name="remember">
-                <span>Remember me</span>
-            </label>
+            <div class="form-group">
+                <label for="password_confirmation">Confirm Password</label>
+                <input
+                    id="password_confirmation"
+                    type="password"
+                    name="password_confirmation"
+                    required
+                    autocomplete="new-password"
+                    class="form-control"
+                >
+                @error('password_confirmation')
+                    <span class="form-error">{{ $message }}</span>
+                @enderror
+            </div>
 
             <button type="submit" class="btn btn-primary btn-block">
-                Login
+                Reset Password
             </button>
         </form>
-
-        <div class="form-footer">
-            <p>
-                <a href="{{ route('password.request') }}" class="link-primary">Forgot Password?</a>
-            </p>
-        </div>
     </div>
 @endsection

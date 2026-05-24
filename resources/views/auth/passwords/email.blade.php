@@ -1,17 +1,23 @@
 @extends('layouts.auth')
 
-@section('title', 'Login')
+@section('title', 'Reset Password')
 
 @section('content')
     <div class="auth-card">
         <div class="auth-card-header">
-            <h2>Sign In</h2>
-            <p>Access the Smart Asset Management portal.</p>
+            <h2>Forgot Password?</h2>
+            <p>Enter your email to receive a password reset link.</p>
         </div>
+
+        @if (session('status'))
+            <div class="form-alert alert-success">
+                {{ session('status') }}
+            </div>
+        @endif
 
         @if ($errors->any())
             <div class="form-alert alert-danger">
-                <strong>Login failed.</strong>
+                <strong>Error</strong>
                 <ul>
                     @foreach ($errors->all() as $error)
                         <li>{{ $error }}</li>
@@ -20,7 +26,7 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ url('/login') }}" class="form-stack">
+        <form method="POST" action="{{ route('password.email') }}" class="form-stack">
             @csrf
 
             <div class="form-group">
@@ -32,7 +38,6 @@
                     value="{{ old('email') }}"
                     required
                     autofocus
-                    autocomplete="email"
                     class="form-control"
                 >
                 @error('email')
@@ -40,34 +45,14 @@
                 @enderror
             </div>
 
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input
-                    id="password"
-                    type="password"
-                    name="password"
-                    required
-                    autocomplete="current-password"
-                    class="form-control"
-                >
-                @error('password')
-                    <span class="form-error">{{ $message }}</span>
-                @enderror
-            </div>
-
-            <label class="checkbox-row">
-                <input type="checkbox" name="remember">
-                <span>Remember me</span>
-            </label>
-
             <button type="submit" class="btn btn-primary btn-block">
-                Login
+                Send Password Reset Link
             </button>
         </form>
 
         <div class="form-footer">
             <p>
-                <a href="{{ route('password.request') }}" class="link-primary">Forgot Password?</a>
+                Remember your password? <a href="{{ route('login') }}" class="link-primary">Login here</a>
             </p>
         </div>
     </div>
