@@ -7,8 +7,12 @@ use App\Http\Controllers\Api\GeofenceController;
 use App\Http\Controllers\Api\LocationController;
 use App\Http\Controllers\Api\AlertController;
 use App\Http\Controllers\Api\WebhookController;
+use App\Http\Controllers\Api\AlertRuleController;
+use App\Http\Controllers\Api\MapController;
+use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\UserManagementController;
 
-// Webhook endpoints (public)
+// Public webhook endpoints
 Route::post('webhooks/location', [WebhookController::class, 'handleLocationWebhook']);
 Route::post('webhooks/alert', [WebhookController::class, 'handleAlertWebhook']);
 Route::get('webhooks/health', [WebhookController::class, 'health']);
@@ -49,4 +53,32 @@ Route::middleware('auth:api')->group(function () {
     Route::patch('alerts/{alert}/mark-resolved', [AlertController::class, 'markAsResolved']);
     Route::get('alerts/count/unread', [AlertController::class, 'getUnreadCount']);
     Route::get('alerts/summary', [AlertController::class, 'getSummary']);
+
+    /**
+     * Alert Rule Routes
+     */
+    Route::apiResource('alert-rules', AlertRuleController::class)->except('show');
+
+    /**
+     * Map Routes
+     */
+    Route::get('map/assets', [MapController::class, 'getAssetsForMap']);
+    Route::get('map/assets/{asset}', [MapController::class, 'getAssetLocation']);
+
+    /**
+     * Report Routes
+     */
+    Route::get('reports/dashboard', [ReportController::class, 'getDashboardMetrics']);
+    Route::get('reports/asset-values', [ReportController::class, 'getAssetValueReport']);
+    Route::get('reports/alerts', [ReportController::class, 'getAlertsReport']);
+    Route::get('reports/export/pdf', [ReportController::class, 'exportToPdf']);
+    Route::get('reports/export/csv', [ReportController::class, 'exportToCsv']);
+
+    /**
+     * User Management Routes
+     */
+    Route::post('users/create-with-credentials', [UserManagementController::class, 'createWithCredentials']);
+    Route::post('users/{user}/reset-password', [UserManagementController::class, 'resetPassword']);
+    Route::post('users/bulk-import', [UserManagementController::class, 'bulkImport']);
+    Route::get('users/bulk-import-template', [UserManagementController::class, 'getBulkImportTemplate']);
 });
