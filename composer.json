@@ -1,5 +1,3 @@
-# Update composer.json platform config to also declare ext-zip
-cat > composer.json << 'COMPOSEREOF'
 {
     "$schema": "https://getcomposer.org/schema.json",
     "name": "laravel/laravel",
@@ -100,4 +98,3 @@ cat > composer.json << 'COMPOSEREOF'
     "minimum-stability": "stable",
     "prefer-stable": true
 }
-COMPOSEREOF
