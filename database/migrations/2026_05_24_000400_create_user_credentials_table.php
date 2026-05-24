@@ -14,12 +14,21 @@ return new class extends Migration
         Schema::create('user_credentials', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->text('temporary_password')->nullable();
-            $table->timestamp('credentials_sent_at')->nullable();
-            $table->timestamp('password_reset_at')->nullable();
-            $table->string('sent_to_email')->nullable();
+            $table->string('email')->unique();
+            $table->string('password_hash')->nullable();
+            $table->string('temp_password')->nullable();
+            $table->timestamp('password_changed_at')->nullable();
+            $table->timestamp('password_expires_at')->nullable();
+            $table->enum('status', ['active', 'inactive', 'suspended'])->default('active');
+            $table->timestamp('last_login_at')->nullable();
+            $table->integer('login_attempts')->default(0);
+            $table->timestamp('locked_until')->nullable();
             $table->timestamps();
+
+            // Indexes
             $table->index('user_id');
+            $table->index('email');
+            $table->index('status');
         });
     }
 

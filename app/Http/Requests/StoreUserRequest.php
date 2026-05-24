@@ -2,57 +2,47 @@
 
 namespace App\Http\Requests;
 
-use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Password;
 
 class StoreUserRequest extends FormRequest
 {
+    /**
+     * Determine if the user is authorized to make this request.
+     */
     public function authorize(): bool
     {
-        return $this->user()?->can('users.create') ?? false;
+        return auth()->check() && auth()->user()->can('create', \App\Models\User::class);
     }
 
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array|string>
+     */
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:150'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'phone' => ['nullable', 'string', 'max:40'],
-            'status' => ['required', Rule::in(User::STATUSES)],
-            'role' => ['required', 'string', 'exists:roles,name'],
-            'password' => ['required', 'confirmed', Password::defaults()],
-            // NEW: Department assignment validation
-            'department_id' => [
-                Rule::requiredIf(fn () => $this->input('role') === 'asset_manager'),
-                'nullable',
-                'integer',
-                'exists:departments,id',
-            ],
-        ];
-    }
-
-    public function messages(): array
-    {
-        return [
-            'department_id.required' => 'Asset managers must be assigned to a department.',
-            'department_id.exists' => 'The selected department does not exist.',
-            'department_id.integer' => 'Department must be a valid selection.',
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users',
+            'department_id' => 'nullable|exists:departments,id',
+            'role' => 'nullable|string',
+            'email_notifications_enabled' => 'boolean',
+            'push_notifications_enabled' => 'boolean',
         ];
     }
 
     /**
-     * Prepare the data for validation.
-     * Admins should not have department_id set
+     * Get custom messages for validator errors.
      */
-    protected function prepareForValidation(): void
+    public function messages(): array
     {
-        // If role is admin, clear department_id
-        if ($this->input('role') === 'admin') {
-            $this->merge([
-                'department_id' => null,
-            ]);
-        }
+        return [
+            'name.required' => 'User name is required',
+            'email.required' => 'Email address is required',
+            'email.email' => 'Email must be a valid email address',
+            'email.unique' => 'This email address is already registered',
+            'department_id.exists' => 'Selected department does not exist',
+        ];
     }
 }

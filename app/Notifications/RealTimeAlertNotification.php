@@ -12,15 +12,11 @@ class RealTimeAlertNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    public Alert $alert;
-
     /**
      * Create a new notification instance.
      */
-    public function __construct(Alert $alert)
+    public function __construct(private Alert $alert)
     {
-        $this->alert = $alert;
-        $this->onQueue('notifications');
     }
 
     /**
@@ -30,12 +26,15 @@ class RealTimeAlertNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        $channels = ['mail', 'database'];
-        
-        if ($notifiable->phone_number && $notifiable->sms_notifications_enabled) {
-            $channels[] = 'twilio';
+        $channels = [];
+
+        if ($notifiable->email_notifications_enabled) {
+            $channels[] = 'mail';
         }
-        
+        if ($notifiable->push_notifications_enabled) {
+            $channels[] = 'fcm';
+        }
+
         return $channels;
     }
 
@@ -44,25 +43,24 @@ class RealTimeAlertNotification extends Notification implements ShouldQueue
      */
     public function toMail(object $notifiable): MailMessage
     {
-        $url = route('alerts.show', $this->alert->id);
-        $severityColor = match($this->alert->severity) {
-            'high' => '#dc2626',
-            'medium' => '#f59e0b',
-            default => '#10b981',
+        $severity = strtoupper($this->alert->severity);
+        $color = match ($this->alert->severity) {
+            'critical' => '#dc2626',
+            'warning' => '#f59e0b',
+            'info' => '#3b82f6',
+            default => '#6b7280',
         };
 
         return (new MailMessage)
-            ->subject('[' . strtoupper($this->alert->severity) . '] ' . $this->alert->title)
-            ->greeting('Alert Notification')
-            ->line('An important alert has been triggered:')
-            ->line('**Asset:** ' . $this->alert->asset->name)
-            ->line('**Type:** ' . $this->alert->alert_type)
-            ->line('**Severity:** ' . strtoupper($this->alert->severity))
-            ->line('**Message:** ' . $this->alert->message)
-            ->line('**Time:** ' . $this->alert->triggered_at->format('Y-m-d H:i:s'))
-            ->action('View Alert Details', $url)
-            ->line('Please take appropriate action as soon as possible.')
-            ->line('Thank you for using Smart Asset Management System');
+            ->subject("[$severity] Asset Alert: {$this->alert->asset->name}")
+            ->greeting("Alert Notification")
+            ->line("Asset: **{$this->alert->asset->name}**")
+            ->line("Type: {$this->alert->alert_type}")
+            ->line("Severity: <span style='color: $color; font-weight: bold;'>$severity</span>")
+            ->line("Description: {$this->alert->description}")
+            ->line("Time: {$this->alert->created_at->format('Y-m-d H:i:s')}")
+            ->action('View Alert Details', url("/alerts/{$this->alert->id}"))
+            ->markdown('emails.alert-notification');
     }
 
     /**
@@ -78,9 +76,7 @@ class RealTimeAlertNotification extends Notification implements ShouldQueue
             'asset_name' => $this->alert->asset->name,
             'alert_type' => $this->alert->alert_type,
             'severity' => $this->alert->severity,
-            'title' => $this->alert->title,
-            'message' => $this->alert->message,
-            'triggered_at' => $this->alert->triggered_at,
+            'description' => $this->alert->description,
         ];
     }
 }

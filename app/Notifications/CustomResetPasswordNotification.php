@@ -3,31 +3,27 @@
 namespace App\Notifications;
 
 use Illuminate\Auth\Notifications\ResetPassword;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 
-class CustomResetPasswordNotification extends ResetPassword implements ShouldQueue
+class CustomResetPasswordNotification extends ResetPassword
 {
-    use Queueable;
-
     /**
      * Get the mail representation of the notification.
      */
     public function toMail(object $notifiable): MailMessage
     {
-        $url = route('password.reset', [
+        $resetUrl = url(route('password.reset', [
             'token' => $this->token,
             'email' => $notifiable->getEmailForPasswordReset(),
-        ], absolute: true);
+        ], false));
 
         return (new MailMessage)
-            ->subject('Reset Password Request')
-            ->greeting('Hello ' . $notifiable->name)
-            ->line('You have requested to reset your password.')
-            ->line('This password reset link will expire in 60 minutes.')
-            ->action('Reset Password', $url)
+            ->subject('Reset Your Password')
+            ->greeting('Hello!')
+            ->line('You are receiving this email because we received a password reset request for your account.')
+            ->action('Reset Password', $resetUrl)
+            ->line('This password reset link will expire in ' . config('auth.passwords.' . config('auth.defaults.passwords') . '.expire') . ' minutes.')
             ->line('If you did not request a password reset, no further action is required.')
-            ->line('Thank you for using Smart Asset Management System');
+            ->salutation('Best regards');
     }
 }

@@ -2,7 +2,7 @@
 
 namespace App\Notifications;
 
-use App\Models\User;
+use App\Models\UserCredential;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -12,19 +12,11 @@ class SendUserCredentialsNotification extends Notification implements ShouldQueu
 {
     use Queueable;
 
-    public User $user;
-    public string $temporaryPassword;
-    public bool $adminCanResetPassword;
-
     /**
      * Create a new notification instance.
      */
-    public function __construct(User $user, string $temporaryPassword, bool $adminCanResetPassword = true)
+    public function __construct(private UserCredential $credential)
     {
-        $this->user = $user;
-        $this->temporaryPassword = $temporaryPassword;
-        $this->adminCanResetPassword = $adminCanResetPassword;
-        $this->onQueue('notifications');
     }
 
     /**
@@ -34,7 +26,7 @@ class SendUserCredentialsNotification extends Notification implements ShouldQueu
      */
     public function via(object $notifiable): array
     {
-        return ['mail', 'database'];
+        return ['mail'];
     }
 
     /**
@@ -42,26 +34,16 @@ class SendUserCredentialsNotification extends Notification implements ShouldQueu
      */
     public function toMail(object $notifiable): MailMessage
     {
-        $loginUrl = route('login', absolute: true);
-
-        $message = (new MailMessage)
-            ->subject('Your Account Credentials - Smart Asset Management System')
-            ->greeting('Welcome to Smart Asset Management System')
-            ->line('Your account has been created by an administrator.')
-            ->line('**Email:** ' . $this->user->email)
-            ->line('**Temporary Password:** ' . $this->temporaryPassword)
-            ->line('Please log in with these credentials and change your password immediately.');
-
-        if ($this->adminCanResetPassword) {
-            $message->line('The administrator may reset your password at any time.')
-                ->line('To request a password reset, contact your administrator.');
-        } else {
-            $message->line('To reset your password, use the "Forgot Password" feature on the login page.');
-        }
-
-        return $message
-            ->action('Login to Your Account', $loginUrl)
-            ->line('Thank you for being part of our system!');
+        return (new MailMessage)
+            ->subject('Your Smart Asset Management System Credentials')
+            ->greeting("Welcome, {$notifiable->name}!")
+            ->line('Your account has been created in the Smart Asset Management System.')
+            ->line("**Email:** {$this->credential->email}")
+            ->line("**Temporary Password:** {$this->credential->temp_password}")
+            ->line('Please log in and change your password immediately for security reasons.')
+            ->action('Login Now', url('/login'))
+            ->line('If you have any questions, please contact your administrator.')
+            ->salutation('Best regards,\nSmart Asset Management System');
     }
 
     /**
@@ -72,10 +54,8 @@ class SendUserCredentialsNotification extends Notification implements ShouldQueu
     public function toArray(object $notifiable): array
     {
         return [
-            'user_id' => $this->user->id,
-            'email' => $this->user->email,
-            'message' => 'New user account created',
-            'temporary_password_sent' => true,
+            'credential_id' => $this->credential->id,
+            'email' => $this->credential->email,
         ];
     }
 }

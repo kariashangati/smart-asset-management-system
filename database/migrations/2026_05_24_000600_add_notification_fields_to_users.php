@@ -12,10 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('phone_number')->nullable()->after('email');
-            $table->boolean('email_notifications_enabled')->default(true)->after('remember_token');
-            $table->boolean('sms_notifications_enabled')->default(false)->after('email_notifications_enabled');
-            $table->boolean('push_notifications_enabled')->default(false)->after('sms_notifications_enabled');
+            $table->string('phone_number')->nullable();
+            $table->boolean('email_notifications_enabled')->default(true);
+            $table->boolean('sms_notifications_enabled')->default(false);
+            $table->boolean('push_notifications_enabled')->default(false);
         });
     }
 
@@ -25,7 +25,12 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn(['phone_number', 'email_notifications_enabled', 'sms_notifications_enabled', 'push_notifications_enabled']);
+            $table->dropColumn([
+                'phone_number',
+                'email_notifications_enabled',
+                'sms_notifications_enabled',
+                'push_notifications_enabled',
+            ]);
         });
     }
 };

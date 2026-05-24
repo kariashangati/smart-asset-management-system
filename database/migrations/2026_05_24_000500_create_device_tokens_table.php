@@ -14,13 +14,17 @@ return new class extends Migration
         Schema::create('device_tokens', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->text('token');
+            $table->string('token')->unique();
+            $table->enum('device_type', ['ios', 'android', 'web'])->default('web');
             $table->string('device_name')->nullable();
-            $table->string('platform')->nullable();
             $table->boolean('is_active')->default(true);
+            $table->timestamp('last_used_at')->nullable();
             $table->timestamps();
-            $table->unique(['user_id', 'token']);
+
+            // Indexes
             $table->index('user_id');
+            $table->index('token');
+            $table->index('is_active');
         });
     }
 

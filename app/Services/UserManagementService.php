@@ -3,97 +3,160 @@
 namespace App\Services;
 
 use App\Models\User;
+use App\Models\UserCredential;
+use App\Models\Department;
 use App\Notifications\SendUserCredentialsNotification;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+use League\Csv\Reader;
 
 class UserManagementService
 {
     /**
-     * Create a new user with temporary password and send credentials
+     * Create a new user with credentials
      */
-    public function createUserWithCredentials(array $data, bool $adminCanResetPassword = true): User
+    public function createUserWithCredentials(array $data): User
     {
-        $temporaryPassword = Str::password(12);
+        // Validate required fields
+        $this->validateUserData($data);
 
+        // Check if user already exists
+        if (User::where('email', $data['email'])->exists()) {
+            throw ValidationException::withMessages(['email' => 'Email already exists']);
+        }
+
+        // Create user
         $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
-            'password' => Hash::make($temporaryPassword),
             'department_id' => $data['department_id'] ?? null,
-            'phone_number' => $data['phone_number'] ?? null,
+            'email_notifications_enabled' => $data['email_notifications_enabled'] ?? true,
+            'push_notifications_enabled' => $data['push_notifications_enabled'] ?? false,
         ]);
 
-        // Assign roles
-        if (isset($data['roles']) && is_array($data['roles'])) {
-            $user->assignRole($data['roles']);
+        // Generate temporary password
+        $tempPassword = Str::random(12);
+
+        // Create user credential
+        $credential = UserCredential::create([
+            'user_id' => $user->id,
+            'email' => $data['email'],
+            'password_hash' => Hash::make($tempPassword),
+            'temp_password' => $tempPassword,
+            'status' => 'active',
+            'password_expires_at' => now()->addDays(90),
+        ]);
+
+        // Send credentials via email
+        $user->notify(new SendUserCredentialsNotification($credential));
+
+        // Assign role if provided
+        if (isset($data['role'])) {
+            $user->assignRole($data['role']);
         }
-
-        // Send credentials notification
-        Notification::send($user, new SendUserCredentialsNotification(
-            $user,
-            $temporaryPassword,
-            $adminCanResetPassword
-        ));
-
-        // Store credential record
-        $user->credentials()->create([
-            'temporary_password' => Hash::make($temporaryPassword),
-            'credentials_sent_at' => now(),
-            'sent_to_email' => $user->email,
-        ]);
 
         return $user;
     }
 
     /**
-     * Reset user password as admin
+     * Bulk import users from CSV
      */
-    public function resetUserPassword(User $user, bool $sendEmail = true): string
-    {
-        $temporaryPassword = Str::password(12);
-
-        $user->update([
-            'password' => Hash::make($temporaryPassword),
-        ]);
-
-        if ($sendEmail) {
-            Notification::send($user, new SendUserCredentialsNotification(
-                $user,
-                $temporaryPassword,
-                true
-            ));
-        }
-
-        return $temporaryPassword;
-    }
-
-    /**
-     * Bulk import users from array
-     */
-    public function bulkImportUsers(array $usersData): array
+    public function bulkImportUsers(string $filePath): array
     {
         $results = [
-            'success' => 0,
+            'imported' => 0,
             'failed' => 0,
             'errors' => [],
-            'created_users' => [],
         ];
 
-        foreach ($usersData as $index => $userData) {
-            try {
-                $this->validateUserData($userData);
-                $user = $this->createUserWithCredentials($userData);
-                $results['success']++;
-                $results['created_users'][] = $user->id;
-            } catch (\Exception $e) {
-                $results['failed']++;
-                $results['errors'][$index] = $e->getMessage();
+        try {
+            $csv = Reader::createFromPath($filePath, 'r');
+            $csv->setHeaderOffset(0);
+
+            $records = $csv->getRecords();
+
+            foreach ($records as $index => $record) {
+                try {
+                    // Extract row data
+                    $data = [
+                        'name' => $record['name'] ?? null,
+                        'email' => $record['email'] ?? null,
+                        'department_id' => $this->getDepartmentId($record['department'] ?? null),
+                        'role' => $record['role'] ?? 'user',
+                        'email_notifications_enabled' => ($record['email_notifications'] ?? 'yes') === 'yes',
+                    ];
+
+                    // Validate record
+                    $this->validateUserData($data);
+
+                    // Create user
+                    $this->createUserWithCredentials($data);
+                    $results['imported']++;
+                } catch (\Exception $e) {
+                    $results['failed']++;
+                    $results['errors'][] = [
+                        'row' => $index + 2, // +2 for header and 0-indexing
+                        'message' => $e->getMessage(),
+                    ];
+                }
             }
+        } catch (\Exception $e) {
+            throw ValidationException::withMessages(['file' => 'Invalid CSV file: ' . $e->getMessage()]);
         }
 
         return $results;
+    }
+
+    /**
+     * Regenerate password for user
+     */
+    public function regeneratePassword(User $user): string
+    {
+        $tempPassword = Str::random(12);
+
+        $credential = $user->credential;
+        if (!$credential) {
+            $credential = UserCredential::create([
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'status' => 'active',
+            ]);
+        }
+
+        $credential->update([
+            'password_hash' => Hash::make($tempPassword),
+            'temp_password' => $tempPassword,
+            'password_expires_at' => now()->addDays(90),
+        ]);
+
+        // Send credentials via email
+        $user->notify(new SendUserCredentialsNotification($credential));
+
+        return $tempPassword;
+    }
+
+    /**
+     * Update password for user
+     */
+    public function updatePassword(User $user, string $newPassword): bool
+    {
+        $credential = $user->credential;
+        if (!$credential) {
+            $credential = UserCredential::create([
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'status' => 'active',
+            ]);
+        }
+
+        $credential->update([
+            'password_hash' => Hash::make($newPassword),
+            'temp_password' => null,
+            'password_changed_at' => now(),
+        ]);
+
+        return true;
     }
 
     /**
@@ -101,14 +164,51 @@ class UserManagementService
      */
     private function validateUserData(array $data): void
     {
+        $errors = [];
+
         if (empty($data['name'])) {
-            throw new \Exception('Name is required');
+            $errors['name'] = 'Name is required';
         }
+
         if (empty($data['email']) || !filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-            throw new \Exception('Valid email is required');
+            $errors['email'] = 'Valid email is required';
         }
-        if (User::where('email', $data['email'])->exists()) {
-            throw new \Exception('Email already exists');
+
+        if (!empty($errors)) {
+            throw ValidationException::withMessages($errors);
         }
+    }
+
+    /**
+     * Get department ID by name
+     */
+    private function getDepartmentId(?string $departmentName): ?int
+    {
+        if (!$departmentName) {
+            return null;
+        }
+
+        $department = Department::where('name', $departmentName)->first();
+        return $department?->id;
+    }
+
+    /**
+     * Generate CSV template for bulk import
+     */
+    public function generateCsvTemplate(): string
+    {
+        $headers = ['name', 'email', 'department', 'role', 'email_notifications'];
+        $sample = [
+            ['John Doe', 'john@example.com', 'IT Department', 'admin', 'yes'],
+            ['Jane Smith', 'jane@example.com', 'Operations', 'user', 'yes'],
+            ['Bob Johnson', 'bob@example.com', 'Maintenance', 'manager', 'no'],
+        ];
+
+        $csv = implode(',', $headers) . "\n";
+        foreach ($sample as $row) {
+            $csv .= implode(',', $row) . "\n";
+        }
+
+        return $csv;
     }
 }
