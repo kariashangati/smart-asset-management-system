@@ -1,3 +1,5 @@
+# Update composer.json platform config to also declare ext-zip
+cat > composer.json << 'COMPOSEREOF'
 {
     "$schema": "https://getcomposer.org/schema.json",
     "name": "laravel/laravel",
@@ -87,7 +89,8 @@
         "sort-packages": true,
         "platform": {
             "php": "8.2.31",
-            "ext-gd": "1"
+            "ext-gd": "1",
+            "ext-zip": "1"
         },
         "allow-plugins": {
             "pestphp/pest-plugin": true,
@@ -97,3 +100,4 @@
     "minimum-stability": "stable",
     "prefer-stable": true
 }
+COMPOSEREOF
