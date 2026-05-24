@@ -6,6 +6,12 @@ use App\Http\Controllers\Api\AssetController;
 use App\Http\Controllers\Api\GeofenceController;
 use App\Http\Controllers\Api\LocationController;
 use App\Http\Controllers\Api\AlertController;
+use App\Http\Controllers\Api\WebhookController;
+
+// Webhook endpoints (public)
+Route::post('webhooks/location', [WebhookController::class, 'handleLocationWebhook']);
+Route::post('webhooks/alert', [WebhookController::class, 'handleAlertWebhook']);
+Route::get('webhooks/health', [WebhookController::class, 'health']);
 
 Route::middleware('auth:api')->group(function () {
     /**

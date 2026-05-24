@@ -2,24 +2,24 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\ Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Traits\LogsActivity;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class LocationLog extends Model
 {
     use HasFactory;
-    use LogsActivity;
 
     protected $fillable = [
-        'tracker_device_id',
         'asset_id',
+        'tracker_device_id',
         'latitude',
         'longitude',
         'speed',
         'motion_detected',
         'recorded_at',
         'received_at',
+        'processed',
     ];
 
     protected $casts = [
@@ -27,23 +27,24 @@ class LocationLog extends Model
         'longitude' => 'float',
         'speed' => 'float',
         'motion_detected' => 'boolean',
+        'processed' => 'boolean',
         'recorded_at' => 'datetime',
         'received_at' => 'datetime',
     ];
 
     /**
-     * Device that sent the location
+     * Asset relationship
      */
-    public function trackerDevice()
+    public function asset(): BelongsTo
     {
-        return $this->belongsTo(TrackerDevice::class);
+        return $this->belongsTo(Asset::class);
     }
 
     /**
-     * Asset related to this log
+     * Tracker device relationship
      */
-    public function asset()
+    public function trackerDevice(): BelongsTo
     {
-        return $this->belongsTo(Asset::class);
+        return $this->belongsTo(TrackerDevice::class);
     }
 }
