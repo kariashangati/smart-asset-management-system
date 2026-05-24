@@ -71,8 +71,6 @@ Route::middleware('auth:api')->group(function () {
     Route::get('reports/dashboard', [ReportController::class, 'getDashboardMetrics']);
     Route::get('reports/asset-values', [ReportController::class, 'getAssetValueReport']);
     Route::get('reports/alerts', [ReportController::class, 'getAlertsReport']);
-    Route::get('reports/export/pdf', [ReportController::class, 'exportToPdf']);
-    Route::get('reports/export/csv', [ReportController::class, 'exportToCsv']);
 
     /**
      * User Management Routes

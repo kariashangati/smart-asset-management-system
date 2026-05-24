@@ -7,8 +7,6 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
-use NotificationChannels\Twilio\TwilioChannel;
-use NotificationChannels\Twilio\TwilioSmsMessage;
 
 class RealTimeAlertNotification extends Notification implements ShouldQueue
 {
@@ -34,8 +32,8 @@ class RealTimeAlertNotification extends Notification implements ShouldQueue
     {
         $channels = ['mail', 'database'];
         
-        if ($notifiable->phone_number) {
-            $channels[] = TwilioChannel::class;
+        if ($notifiable->phone_number && $notifiable->sms_notifications_enabled) {
+            $channels[] = 'twilio';
         }
         
         return $channels;
@@ -65,21 +63,6 @@ class RealTimeAlertNotification extends Notification implements ShouldQueue
             ->action('View Alert Details', $url)
             ->line('Please take appropriate action as soon as possible.')
             ->line('Thank you for using Smart Asset Management System');
-    }
-
-    /**
-     * Get the SMS representation of the notification.
-     */
-    public function toTwilio(object $notifiable): TwilioSmsMessage
-    {
-        return (new TwilioSmsMessage())
-            ->content(
-                "[ALERT] {$this->alert->title}\n" .
-                "Asset: {$this->alert->asset->name}\n" .
-                "Severity: {$this->alert->severity}\n" .
-                "Message: {$this->alert->message}\n" .
-                "Time: {$this->alert->triggered_at->format('H:i:s')}"
-            );
     }
 
     /**

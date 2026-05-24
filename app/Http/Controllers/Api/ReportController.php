@@ -77,62 +77,6 @@ class ReportController extends Controller
     }
 
     /**
-     * Export report as PDF
-     * GET /api/reports/export/pdf
-     */
-    public function exportToPdf(): mixed
-    {
-        $metrics = $this->getDashboardMetrics()->getData();
-        $timestamp = Carbon::now()->format('Y-m-d H:i:s');
-
-        $pdf = Pdf::loadView('reports.dashboard', [
-            'metrics' => $metrics->data,
-            'timestamp' => $timestamp,
-        ]);
-
-        return $pdf->download('dashboard-report-' . now()->format('Y-m-d-H-i-s') . '.pdf');
-    }
-
-    /**
-     * Export report as CSV
-     * GET /api/reports/export/csv
-     */
-    public function exportToCsv(): mixed
-    {
-        $assets = Asset::with('assetValue', 'department')
-            ->get()
-            ->map(function (Asset $asset) {
-                return [
-                    'ID' => $asset->id,
-                    'Name' => $asset->name,
-                    'Type' => $asset->asset_type,
-                    'Serial Number' => $asset->serial_number,
-                    'Status' => $asset->status,
-                    'Department' => $asset->department->name,
-                    'Purchase Price' => $asset->assetValue?->purchase_price ?? 'N/A',
-                    'Current Value' => $asset->assetValue?->current_value ?? 'N/A',
-                ];
-            });
-
-        $filename = 'assets-report-' . now()->format('Y-m-d-H-i-s') . '.csv';
-        $headers = [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => "attachment; filename={$filename}",
-        ];
-
-        $callback = function () use ($assets) {
-            $file = fopen('php://output', 'w');
-            fputcsv($file, array_keys($assets->first()->toArray()));
-            foreach ($assets as $asset) {
-                fputcsv($file, $asset->toArray());
-            }
-            fclose($file);
-        };
-
-        return response()->stream($callback, 200, $headers);
-    }
-
-    /**
      * Get alerts report
      * GET /api/reports/alerts
      */
