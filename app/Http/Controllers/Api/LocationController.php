@@ -2,201 +2,194 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Requests\StoreLocationRequest;
+use App\Http\Controllers\Controller;
 use App\Models\Asset;
-use App\Models\AssetLatestLocation;
 use App\Models\LocationLog;
-use App\Models\TrackerDevice;
-use App\Services\GeofenceService;
 use App\Services\LocationService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Http\Request;
 
-class LocationController
+class LocationController extends Controller
 {
     protected LocationService $locationService;
-    protected GeofenceService $geofenceService;
 
-    public function __construct(
-        LocationService $locationService,
-        GeofenceService $geofenceService
-    ) {
+    public function __construct(LocationService $locationService)
+    {
         $this->locationService = $locationService;
-        $this->geofenceService = $geofenceService;
     }
 
     /**
-     * Health check endpoint for devices
-     * 
-     * GET /api/health
-     * 
-     * Response: {"status": "ok", "timestamp": "2026-05-23T12:00:00Z"}
+     * Get current location for an asset
+     * GET /api/assets/{asset_id}/location
      */
-    public function health(): JsonResponse
+    public function getCurrentLocation(Asset $asset): JsonResponse
     {
+        $this->authorize('view', $asset);
+
+        $location = $this->locationService->getLatestLocationForAsset($asset);
+
+        if (!$location) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No location data available for this asset',
+            ], 404);
+        }
+
         return response()->json([
-            'status' => 'ok',
-            'timestamp' => now()->toIso8601String(),
-            'message' => 'Location tracking API is operational',
+            'success' => true,
+            'data' => [
+                'asset_id' => $asset->id,
+                'latitude' => $location->latitude,
+                'longitude' => $location->longitude,
+                'last_recorded_at' => $location->last_recorded_at,
+                'last_motion_detected' => $location->last_motion_detected,
+            ],
         ]);
     }
 
     /**
-     * Receive location data from GPS hardware device
-     * 
-     * POST /api/tracker/location
-     * 
-     * Request JSON:
-     * {
-     *     "api_token_hash": "device_token_hash_from_database",
-     *     "latitude": 37.7749,
-     *     "longitude": -122.4194,
-     *     "speed": 25.5,
-     *     "motion_detected": true,
-     *     "battery_level": 85
-     * }
-     * 
-     * Response on success (201):
-     * {
-     *     "success": true,
-     *     "message": "Location recorded successfully",
-     *     "location_log_id": 1,
-     *     "alerts_created": 0
-     * }
-     * 
-     * Response on error (400/401):
-     * {
-     *     "success": false,
-     *     "message": "Error description",
-     *     "errors": { ... }
-     * }
+     * Get location history for an asset
+     * GET /api/assets/{asset_id}/location-history
      */
-    public function store(StoreLocationRequest $request): JsonResponse
+    public function getHistory(Request $request, Asset $asset): JsonResponse
     {
-        try {
-            $data = $request->validated();
+        $this->authorize('view', $asset);
 
-            // Step 1: Authenticate device via API token hash
-            $device = $this->authenticateDevice($data['api_token_hash']);
-            if (!$device) {
-                Log::warning('API access attempt with invalid token', [
-                    'token_hash' => substr($data['api_token_hash'], 0, 10) . '...',
-                    'ip' => $request->ip(),
-                ]);
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid API token',
-                ], Response::HTTP_UNAUTHORIZED);
-            }
+        $request->validate([
+            'limit' => 'nullable|integer|min:1|max:1000',
+            'per_page' => 'nullable|integer|min:1|max:100',
+        ]);
 
-            // Step 2: Get the asset assigned to this device
-            $asset = $device->activeAssignment?->asset;
-            if (!$asset) {
-                Log::warning('Device has no active asset assignment', [
-                    'device_id' => $device->id,
-                ]);
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Device has no active asset assignment',
-                ], Response::HTTP_BAD_REQUEST);
-            }
-
-            // Step 3: Create location log
-            $locationLog = LocationLog::create([
-                'tracker_device_id' => $device->id,
-                'asset_id' => $asset->id,
-                'latitude' => $data['latitude'],
-                'longitude' => $data['longitude'],
-                'speed' => $data['speed'] ?? 0,
-                'motion_detected' => $data['motion_detected'] ?? false,
-                'recorded_at' => now(),
-                'received_at' => now(),
-            ]);
-
-            // Step 4: Update device status
-            $device->update([
-                'last_seen_at' => now(),
-                'battery_level' => $data['battery_level'] ?? $device->battery_level,
-                'status' => 'active',
-            ]);
-
-            // Step 5: Update latest location for asset
-            AssetLatestLocation::updateOrCreate(
-                ['asset_id' => $asset->id],
-                [
-                    'tracker_device_id' => $device->id,
-                    'latitude' => $data['latitude'],
-                    'longitude' => $data['longitude'],
-                    'last_motion_detected' => $data['motion_detected'] ?? false,
-                    'last_recorded_at' => now(),
-                ]
+        if ($request->has('per_page')) {
+            $history = $this->locationService->getLocationHistoryPaginated(
+                $asset->id,
+                $request->per_page
             );
-
-            // Step 6: Check geofence violations and create alerts automatically
-            $alertsCreated = 0;
-            try {
-                $this->geofenceService->checkAndCreateAlerts(
-                    asset: $asset,
-                    latitude: $data['latitude'],
-                    longitude: $data['longitude'],
-                    trackerDevice: $device,
-                    speed: $data['speed'] ?? 0,
-                    motionDetected: $data['motion_detected'] ?? false
-                );
-                $alertsCreated = 1; // Simplified count (actual implementation checks for new alerts)
-            } catch (\Exception $e) {
-                Log::error('Geofence checking error', [
-                    'asset_id' => $asset->id,
-                    'error' => $e->getMessage(),
-                ]);
-                // Don't fail the request if geofence check fails
-            }
-
-            Log::info('Location data received and processed', [
-                'device_id' => $device->id,
-                'asset_id' => $asset->id,
-                'latitude' => $data['latitude'],
-                'longitude' => $data['longitude'],
-                'location_log_id' => $locationLog->id,
-            ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Location recorded successfully',
-                'location_log_id' => $locationLog->id,
-                'alerts_created' => $alertsCreated,
-                'timestamp' => now()->toIso8601String(),
-            ], Response::HTTP_CREATED);
-
-        } catch (\Exception $e) {
-            Log::error('Location API error', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+                'data' => $history->items(),
+                'pagination' => [
+                    'total' => $history->total(),
+                    'per_page' => $history->perPage(),
+                    'current_page' => $history->currentPage(),
+                    'last_page' => $history->lastPage(),
+                ],
             ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'An error occurred while processing location data',
-                'error' => config('app.debug') ? $e->getMessage() : null,
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
+
+        $limit = $request->limit ?? 100;
+        $history = $this->locationService->getLocationHistory($asset->id, $limit);
+
+        return response()->json([
+            'success' => true,
+            'data' => $history,
+            'count' => $history->count(),
+        ]);
     }
 
     /**
-     * Authenticate device using API token hash
-     * 
-     * Security: Token is hashed before storage, so we hash the incoming token
-     * and compare with database
+     * Get location statistics for an asset
+     * GET /api/assets/{asset_id}/location-stats
      */
-    private function authenticateDevice(string $apiTokenHash): ?TrackerDevice
+    public function getStatistics(Asset $asset): JsonResponse
     {
-        // Hash the incoming token and find device
-        // Note: If tokens are already hashed in DB, compare directly
-        $device = TrackerDevice::where('api_token_hash', $apiTokenHash)
-            ->where('status', '!=', 'inactive')
-            ->first();
+        $this->authorize('view', $asset);
 
-        return $device;
+        $avgSpeed = $this->locationService->calculateAverageSpeed($asset->id);
+        $totalDistance = $this->locationService->calculateTotalDistance($asset->id);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'asset_id' => $asset->id,
+                'average_speed' => round($avgSpeed ?? 0, 2),
+                'total_distance_km' => $totalDistance,
+            ],
+        ]);
+    }
+
+    /**
+     * Store location log (from tracking device)
+     * POST /api/location-logs
+     */
+    public function storeLocationLog(Request $request): JsonResponse
+    {
+        $request->validate([
+            'tracker_device_id' => 'required|integer|exists:tracker_devices,id',
+            'asset_id' => 'nullable|integer|exists:assets,id',
+            'latitude' => 'required|numeric|between:-90,90',
+            'longitude' => 'required|numeric|between:-180,180',
+            'speed' => 'nullable|numeric|min:0',
+            'motion_detected' => 'nullable|boolean',
+            'recorded_at' => 'nullable|date_format:Y-m-d H:i:s',
+        ]);
+
+        $locationLog = $this->locationService->storeLocationLog($request->validated());
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Location logged successfully',
+            'data' => $locationLog,
+        ], 201);
+    }
+
+    /**
+     * Batch store location logs
+     * POST /api/location-logs/batch
+     */
+    public function batchStoreLocationLogs(Request $request): JsonResponse
+    {
+        $request->validate([
+            'locations' => 'required|array|min:1|max:100',
+            'locations.*.tracker_device_id' => 'required|integer|exists:tracker_devices,id',
+            'locations.*.asset_id' => 'nullable|integer|exists:assets,id',
+            'locations.*.latitude' => 'required|numeric|between:-90,90',
+            'locations.*.longitude' => 'required|numeric|between:-180,180',
+            'locations.*.speed' => 'nullable|numeric|min:0',
+            'locations.*.motion_detected' => 'nullable|boolean',
+            'locations.*.recorded_at' => 'nullable|date_format:Y-m-d H:i:s',
+        ]);
+
+        $stored = [];
+        foreach ($request->locations as $location) {
+            $stored[] = $this->locationService->storeLocationLog($location);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Locations logged successfully',
+            'count' => count($stored),
+            'data' => $stored,
+        ], 201);
+    }
+
+    /**
+     * Get location logs by date range
+     * GET /api/assets/{asset_id}/location-range
+     */
+    public function getLocationByDateRange(Request $request, Asset $asset): JsonResponse
+    {
+        $this->authorize('view', $asset);
+
+        $request->validate([
+            'from' => 'required|date_format:Y-m-d H:i:s',
+            'to' => 'required|date_format:Y-m-d H:i:s|after:from',
+        ]);
+
+        $logs = LocationLog::where('asset_id', $asset->id)
+            ->whereBetween('recorded_at', [$request->from, $request->to])
+            ->orderBy('recorded_at', 'asc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $logs,
+            'count' => $logs->count(),
+            'date_range' => [
+                'from' => $request->from,
+                'to' => $request->to,
+            ],
+        ]);
     }
 }

@@ -2,45 +2,45 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\AssetController;
+use App\Http\Controllers\Api\GeofenceController;
 use App\Http\Controllers\Api\LocationController;
+use App\Http\Controllers\Api\AlertController;
 
-Route::get('/health', [LocationController::class, 'health'])
-    ->name('health');
+Route::middleware('auth:api')->group(function () {
+    /**
+     * Asset Routes
+     */
+    Route::apiResource('assets', AssetController::class);
+    Route::get('assets/department/{departmentId}', [AssetController::class, 'getByDepartment']);
+    Route::get('assets/{asset}/location-history', [AssetController::class, 'getLocationHistory']);
+    Route::get('assets/{asset}/alerts', [AssetController::class, 'getAlerts']);
 
-/*
-|--------------------------------------------------------------------------
-| Location Tracking API Routes (For GPS Hardware Devices)
-|--------------------------------------------------------------------------
-| These endpoints are for embedded devices (ESP32/SIM800L) to send
-| GPS location data to the system without authentication
-|
-| Device Authentication: API Token Hash (stored in tracker_devices table)
-|
-| Rate Limit: 60 requests per minute per device
-*/
-Route::prefix('tracker')
-    ->name('tracker.')
-    ->middleware(['api', 'throttle:60,1'])
-    ->group(function () {
-        /**
-         * POST /api/tracker/location
-         * 
-         * Receives GPS location from hardware device and:
-         * - Stores location log
-         * - Updates device status
-         * - Checks geofence violations
-         * - Creates alerts automatically
-         * 
-         * Request JSON:
-         * {
-         *     "api_token_hash": "device_token_hash",
-         *     "latitude": 37.7749,
-         *     "longitude": -122.4194,
-         *     "speed": 25.5,
-         *     "motion_detected": true,
-         *     "battery_level": 85
-         * }
-         */
-        Route::post('/location', [LocationController::class, 'store'])
-            ->name('location.store');
-    });
+    /**
+     * Location Routes
+     */
+    Route::get('assets/{asset}/location', [LocationController::class, 'getCurrentLocation']);
+    Route::get('assets/{asset}/location-history', [LocationController::class, 'getHistory']);
+    Route::get('assets/{asset}/location-stats', [LocationController::class, 'getStatistics']);
+    Route::get('assets/{asset}/location-range', [LocationController::class, 'getLocationByDateRange']);
+    Route::post('location-logs', [LocationController::class, 'storeLocationLog']);
+    Route::post('location-logs/batch', [LocationController::class, 'batchStoreLocationLogs']);
+
+    /**
+     * Geofence Routes
+     */
+    Route::apiResource('geofences', GeofenceController::class);
+    Route::get('geofences/{geofence}/violations', [GeofenceController::class, 'getViolations']);
+    Route::post('geofences/{geofence}/check-asset', [GeofenceController::class, 'checkAssetInside']);
+    Route::post('geofences/{geofence}/assign-assets', [GeofenceController::class, 'assignAssets']);
+
+    /**
+     * Alert Routes
+     */
+    Route::apiResource('alerts', AlertController::class)->only(['index', 'show', 'destroy']);
+    Route::get('assets/{asset}/alerts', [AlertController::class, 'getAssetAlerts']);
+    Route::patch('alerts/{alert}/mark-read', [AlertController::class, 'markAsRead']);
+    Route::patch('alerts/{alert}/mark-resolved', [AlertController::class, 'markAsResolved']);
+    Route::get('alerts/count/unread', [AlertController::class, 'getUnreadCount']);
+    Route::get('alerts/summary', [AlertController::class, 'getSummary']);
+});
