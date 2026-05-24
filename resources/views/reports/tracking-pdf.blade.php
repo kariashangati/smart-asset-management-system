@@ -1,9 +1,9 @@
-````markdown name=resources/views/reports/assets-pdf.blade.php
+````markdown name=resources/views/reports/tracking-pdf.blade.php
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Assets Report</title>
+    <title>Tracking Report</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -28,35 +28,31 @@
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
+            font-size: 11px;
         }
         thead {
             background-color: #34495e;
             color: white;
         }
         th {
-            padding: 12px;
+            padding: 10px;
             text-align: left;
             border: 1px solid #ddd;
             font-weight: bold;
         }
         td {
-            padding: 10px;
+            padding: 8px;
             border: 1px solid #ddd;
         }
         tbody tr:nth-child(even) {
             background-color: #ecf0f1;
         }
-        .status-active {
+        .motion-yes {
             color: #27ae60;
             font-weight: bold;
         }
-        .status-maintenance {
-            color: #f39c12;
-            font-weight: bold;
-        }
-        .status-retired {
-            color: #e74c3c;
-            font-weight: bold;
+        .motion-no {
+            color: #95a5a6;
         }
         .footer {
             margin-top: 30px;
@@ -79,44 +75,42 @@
 </head>
 <body>
     <div class="header">
-        <h1>Assets Report</h1>
+        <h1>Tracking History Report</h1>
         <p>Smart Asset Management System</p>
         <p>Generated: {{ $generatedAt->format('d F Y H:i:s') }}</p>
     </div>
 
     <div class="summary">
-        <p><strong>Total Assets:</strong> {{ $assets->count() }}</p>
-        <p><strong>Active Assets:</strong> {{ $assets->where('status', 'active')->count() }}</p>
-        <p><strong>Under Maintenance:</strong> {{ $assets->where('status', 'maintenance')->count() }}</p>
-        <p><strong>Retired:</strong> {{ $assets->where('status', 'retired')->count() }}</p>
+        <p><strong>Total Entries:</strong> {{ $logs->count() }}</p>
+        <p><strong>Date Range:</strong> {{ $logs->min('recorded_at')?->format('d M Y') ?? '—' }} to {{ $logs->max('recorded_at')?->format('d M Y') ?? '—' }}</p>
     </div>
 
     <table>
         <thead>
             <tr>
-                <th>Asset Code</th>
-                <th>Name</th>
-                <th>Category</th>
-                <th>Department</th>
-                <th>Status</th>
-                <th>Assigned Device</th>
-                <th>Purchase Date</th>
+                <th>Asset</th>
+                <th>Device</th>
+                <th>Timestamp</th>
+                <th>Latitude</th>
+                <th>Longitude</th>
+                <th>Speed (km/h)</th>
+                <th>Motion</th>
             </tr>
         </thead>
         <tbody>
-            @foreach($assets as $asset)
+            @foreach($logs as $log)
             <tr>
-                <td>{{ $asset->asset_code }}</td>
-                <td>{{ $asset->name }}</td>
-                <td>{{ $asset->category->name ?? '—' }}</td>
-                <td>{{ $asset->department->name ?? '—' }}</td>
+                <td>{{ $log->asset->name ?? '—' }}</td>
+                <td>{{ $log->trackerDevice->device_name ?? '—' }}</td>
+                <td>{{ $log->recorded_at->format('d M Y H:i:s') }}</td>
+                <td>{{ $log->latitude }}</td>
+                <td>{{ $log->longitude }}</td>
+                <td>{{ $log->speed ?? '—' }}</td>
                 <td>
-                    <span class="status-{{ $asset->status }}">
-                        {{ ucfirst($asset->status) }}
+                    <span class="motion-{{ $log->motion_detected ? 'yes' : 'no' }}">
+                        {{ $log->motion_detected ? 'Yes' : 'No' }}
                     </span>
                 </td>
-                <td>{{ $asset->activeAssignment->trackerDevice->device_name ?? 'Not assigned' }}</td>
-                <td>{{ $asset->purchase_date ? $asset->purchase_date->format('d M Y') : '—' }}</td>
             </tr>
             @endforeach
         </tbody>

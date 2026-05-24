@@ -1,3 +1,4 @@
+````markdown name=resources/views/reports/alerts-pdf.blade.php
 <!DOCTYPE html>
 <html>
 <head>
@@ -6,135 +7,146 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-        h1 {
-            text-align: center;
             color: #333;
+            margin: 20px;
         }
         .header {
             text-align: center;
-            margin-bottom: 30px;
             border-bottom: 2px solid #333;
-            padding-bottom: 10px;
-        }
-        .metrics {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
+            padding-bottom: 20px;
             margin-bottom: 30px;
         }
-        .metric-box {
-            border: 1px solid #ddd;
-            padding: 15px;
-            border-radius: 5px;
-            background-color: #f9f9f9;
+        .header h1 {
+            margin: 0;
+            color: #2c3e50;
         }
-        .metric-label {
-            font-weight: bold;
-            color: #555;
-        }
-        .metric-value {
-            font-size: 24px;
-            color: #333;
-            margin-top: 5px;
-        }
-        .critical {
-            color: #dc2626;
+        .header p {
+            margin: 5px 0;
+            color: #666;
         }
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
         }
+        thead {
+            background-color: #34495e;
+            color: white;
+        }
         th {
-            background-color: #f0f0f0;
-            padding: 10px;
+            padding: 12px;
             text-align: left;
-            border-bottom: 2px solid #333;
+            border: 1px solid #ddd;
+            font-weight: bold;
         }
         td {
             padding: 10px;
-            border-bottom: 1px solid #ddd;
+            border: 1px solid #ddd;
         }
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
+        tbody tr:nth-child(even) {
+            background-color: #ecf0f1;
+        }
+        .severity-critical {
+            color: #c0392b;
+            font-weight: bold;
+        }
+        .severity-high {
+            color: #e67e22;
+            font-weight: bold;
+        }
+        .severity-medium {
+            color: #f39c12;
+            font-weight: bold;
+        }
+        .severity-low {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        .status-unread {
+            color: #c0392b;
+            font-weight: bold;
+        }
+        .status-read {
+            color: #f39c12;
+            font-weight: bold;
+        }
+        .status-resolved {
+            color: #27ae60;
+            font-weight: bold;
         }
         .footer {
-            margin-top: 40px;
-            text-align: center;
-            color: #888;
-            font-size: 12px;
+            margin-top: 30px;
+            padding-top: 20px;
             border-top: 1px solid #ddd;
-            padding-top: 10px;
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+        }
+        .summary {
+            margin-bottom: 20px;
+            background-color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .summary p {
+            margin: 5px 0;
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>🚨 Alerts Report</h1>
-        <p>Generated on {{ now()->format('Y-m-d H:i:s') }}</p>
+        <h1>Alerts Report</h1>
+        <p>Smart Asset Management System</p>
+        <p>Generated: {{ $generatedAt->format('d F Y H:i:s') }}</p>
     </div>
 
-    <div class="metrics">
-        <div class="metric-box">
-            <div class="metric-label">Total Alerts</div>
-            <div class="metric-value">{{ $report['total_alerts'] }}</div>
-        </div>
-        <div class="metric-box">
-            <div class="metric-label critical">Critical Alerts</div>
-            <div class="metric-value critical">{{ $report['critical_alerts'] }}</div>
-        </div>
-        <div class="metric-box">
-            <div class="metric-label">Alert Types</div>
-            <div class="metric-value">{{ count($report['by_type']) }}</div>
-        </div>
+    <div class="summary">
+        <p><strong>Total Alerts:</strong> {{ $alerts->count() }}</p>
+        <p><strong>Critical:</strong> {{ $alerts->where('severity', 'critical')->count() }} | 
+           <strong>High:</strong> {{ $alerts->where('severity', 'high')->count() }} | 
+           <strong>Medium:</strong> {{ $alerts->where('severity', 'medium')->count() }} | 
+           <strong>Low:</strong> {{ $alerts->where('severity', 'low')->count() }}</p>
+        <p><strong>Unread:</strong> {{ $alerts->where('status', 'unread')->count() }} | 
+           <strong>Read:</strong> {{ $alerts->where('status', 'read')->count() }} | 
+           <strong>Resolved:</strong> {{ $alerts->where('status', 'resolved')->count() }}</p>
     </div>
 
-    <h2>Alerts By Severity</h2>
     <table>
         <thead>
             <tr>
-                <th>Severity</th>
-                <th>Count</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($report['by_severity'] as $severity)
-            <tr>
-                <td>{{ $severity['severity'] }}</td>
-                <td>{{ $severity['count'] }}</td>
-            </tr>
-            @endforeach
-        </tbody>
-    </table>
-
-    <h2>Recent Alerts</h2>
-    <table>
-        <thead>
-            <tr>
+                <th>Title</th>
                 <th>Asset</th>
                 <th>Type</th>
                 <th>Severity</th>
                 <th>Status</th>
-                <th>Created</th>
+                <th>Triggered At</th>
             </tr>
         </thead>
         <tbody>
-            @foreach($report['alerts_list'] as $alert)
+            @foreach($alerts as $alert)
             <tr>
-                <td>{{ $alert['asset_name'] }}</td>
-                <td>{{ $alert['type'] }}</td>
-                <td>{{ ucfirst($alert['severity']) }}</td>
-                <td>{{ ucfirst($alert['status']) }}</td>
-                <td>{{ $alert['created_at'] }}</td>
+                <td>{{ $alert->title }}</td>
+                <td>{{ $alert->asset->name ?? '—' }}</td>
+                <td>{{ str_replace('_', ' ', ucfirst($alert->alert_type)) }}</td>
+                <td>
+                    <span class="severity-{{ $alert->severity }}">
+                        {{ ucfirst($alert->severity) }}
+                    </span>
+                </td>
+                <td>
+                    <span class="status-{{ $alert->status }}">
+                        {{ ucfirst($alert->status) }}
+                    </span>
+                </td>
+                <td>{{ $alert->triggered_at->format('d M Y H:i:s') }}</td>
             </tr>
             @endforeach
         </tbody>
     </table>
 
     <div class="footer">
-        <p>This is an automated report. Please contact administrator for inquiries.</p>
+        <p>This report is confidential and generated by the Smart Asset Management System.</p>
     </div>
 </body>
 </html>
+````
