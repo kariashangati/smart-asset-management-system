@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 
@@ -57,6 +59,22 @@ class Asset extends Model
     public function trackerDevice(): BelongsTo
     {
         return $this->belongsTo(TrackerDevice::class);
+    }
+
+    /**
+     * Active assignment relationship
+     */
+    public function activeAssignment(): HasOne
+    {
+        return $this->hasOne(AssetDeviceAssignment::class)->where('is_active', true);
+    }
+
+    /**
+     * All assignments relationship
+     */
+    public function assignments(): HasMany
+    {
+        return $this->hasMany(AssetDeviceAssignment::class);
     }
 
     /**
