@@ -2,67 +2,114 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Models\Asset;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class MapController extends Controller
 {
     /**
-     * Get assets for map display
+     * Get assets for map view
      * GET /api/map/assets
      */
-    public function getAssetsForMap(): JsonResponse
+    public function getAssetsForMap(Request $request): JsonResponse
     {
-        $assets = Asset::with('latestLocation', 'department')
-            ->whereHas('latestLocation')
+        $request->validate([
+            'department_id' => 'nullable|exists:departments,id',
+            'status' => 'nullable|string|in:active,inactive,maintenance,retired',
+        ]);
+
+        $query = Asset::with(['latestLocation', 'department'])
+            ->whereNotNull('latestLocation');
+
+        if ($request->department_id) {
+            $query->where('department_id', $request->department_id);
+        }
+        if ($request->status) {
+            $query->where('status', $request->status);
+        }
+
+        $assets = $query->get()->map(function ($asset) {
+            return [
+                'id' => $asset->id,
+                'name' => $asset->name,
+                'asset_type' => $asset->asset_type,
+                'status' => $asset->status,
+                'latitude' => $asset->latestLocation->latitude,
+                'longitude' => $asset->latestLocation->longitude,
+                'last_updated' => $asset->latestLocation->last_recorded_at,
+                'department' => $asset->department?->name,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => $assets,
+            'map_config' => [
+                'google_maps_api_key' => env('GOOGLE_MAPS_API_KEY'),
+                'default_center' => [
+                    'lat' => $assets->first()?->latitude ?? 40.7128,
+                    'lng' => $assets->first()?->longitude ?? -74.0060,
+                ],
+                'default_zoom' => 12,
+            ],
+        ]);
+    }
+
+    /**
+     * Get single asset location with history
+     * GET /api/map/assets/{id}/track
+     */
+    public function getAssetTrack(Asset $asset): JsonResponse
+    {
+        $this->authorize('view', $asset);
+
+        $locations = $asset->locationLogs()
+            ->orderBy('recorded_at', 'asc')
+            ->limit(100)
             ->get()
-            ->map(function (Asset $asset) {
+            ->map(function ($log) {
                 return [
-                    'id' => $asset->id,
-                    'name' => $asset->name,
-                    'type' => $asset->asset_type,
-                    'status' => $asset->status,
-                    'latitude' => $asset->latestLocation->latitude,
-                    'longitude' => $asset->latestLocation->longitude,
-                    'last_updated' => $asset->latestLocation->last_recorded_at,
-                    'department' => $asset->department->name,
+                    'lat' => $log->latitude,
+                    'lng' => $log->longitude,
+                    'speed' => $log->speed,
+                    'timestamp' => $log->recorded_at,
                 ];
             });
 
         return response()->json([
             'success' => true,
-            'data' => $assets,
-            'maps_api_key' => config('integrations.google_maps_api_key'),
+            'asset' => [
+                'id' => $asset->id,
+                'name' => $asset->name,
+                'type' => $asset->asset_type,
+            ],
+            'track' => $locations,
         ]);
     }
 
     /**
-     * Get single asset location for map
-     * GET /api/map/assets/{id}
+     * Get geofences for map
+     * GET /api/map/geofences
      */
-    public function getAssetLocation(Asset $asset): JsonResponse
+    public function getGeofencesForMap(): JsonResponse
     {
-        $this->authorize('view', $asset);
-
-        if (!$asset->latestLocation) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No location data available',
-            ], 404);
-        }
+        $geofences = \App\Models\Geofence::where('status', 'active')->get()->map(function ($geofence) {
+            return [
+                'id' => $geofence->id,
+                'name' => $geofence->name,
+                'center' => [
+                    'lat' => $geofence->center_latitude,
+                    'lng' => $geofence->center_longitude,
+                ],
+                'radius' => $geofence->radius_meters,
+                'alert_on_breach' => $geofence->alert_on_breach,
+            ];
+        });
 
         return response()->json([
             'success' => true,
-            'data' => [
-                'id' => $asset->id,
-                'name' => $asset->name,
-                'latitude' => $asset->latestLocation->latitude,
-                'longitude' => $asset->latestLocation->longitude,
-                'speed' => $asset->latestLocation->last_motion_detected ? 'Moving' : 'Stationary',
-                'last_updated' => $asset->latestLocation->last_recorded_at,
-            ],
-            'maps_api_key' => config('integrations.google_maps_api_key'),
+            'data' => $geofences,
         ]);
     }
 }

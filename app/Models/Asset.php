@@ -4,85 +4,71 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Traits\LogsActivity;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class Asset extends Model
 {
-    use HasFactory;
-    use LogsActivity;
+    use HasFactory, LogsActivity;
 
     protected $fillable = [
-        'asset_code',
         'name',
-        'serial_number',
-        'asset_category_id',
-        'department_id',
         'description',
-        'purchase_date',
+        'asset_type',
+        'serial_number',
         'status',
-        'image',
+        'department_id',
+        'tracker_device_id',
+        'asset_value',
+        'purchase_date',
+        'location',
+        'notes',
         'created_by',
-        'updated_by',
     ];
 
     protected $casts = [
+        'asset_value' => 'float',
         'purchase_date' => 'date',
     ];
 
     /**
-     * Asset category
+     * Get activity log options
      */
-    public function category()
+    public function getActivitylogOptions(): LogOptions
     {
-        return $this->belongsTo(
-            AssetCategory::class,
-            'asset_category_id'
-        );
+        return LogOptions::defaults()
+            ->logOnly(['name', 'status', 'asset_value', 'location'])
+            ->logOnlyDirty()
+            ->useLogName('asset');
     }
 
     /**
-     * Department
+     * Department relationship
      */
-    public function department()
+    public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class);
     }
 
     /**
-     * Device assignments
+     * Tracker device relationship
      */
-    public function assignments()
+    public function trackerDevice(): BelongsTo
     {
-        return $this->hasMany(AssetDeviceAssignment::class);
+        return $this->belongsTo(TrackerDevice::class);
     }
 
     /**
-     * Current active assignment
+     * Latest location relationship
      */
-    public function activeAssignment()
+    public function latestLocation()
     {
-        return $this->hasOne(AssetDeviceAssignment::class)
-            ->where('is_active', true);
+        return $this->hasOne(AssetLatestLocation::class)->latest('last_recorded_at');
     }
 
     /**
-     * Geofences
-     */
-    public function geofences()
-    {
-        return $this->hasMany(Geofence::class);
-    }
-
-    /**
-     * Alerts
-     */
-    public function alerts()
-    {
-        return $this->hasMany(Alert::class);
-    }
-
-    /**
-     * Location history logs
+     * Location logs relationship
      */
     public function locationLogs()
     {
@@ -90,11 +76,26 @@ class Asset extends Model
     }
 
     /**
-     * Latest location for this asset
-     * PHASE 1: Fix missing relationship that was referenced in views
+     * Alerts relationship
      */
-    public function latestLocation()
+    public function alerts()
     {
-        return $this->hasOne(AssetLatestLocation::class);
+        return $this->hasMany(Alert::class);
+    }
+
+    /**
+     * Geofences relationship
+     */
+    public function geofences()
+    {
+        return $this->belongsToMany(Geofence::class);
+    }
+
+    /**
+     * Custom alert rules relationship
+     */
+    public function customAlertRules()
+    {
+        return $this->hasMany(CustomAlertRule::class);
     }
 }

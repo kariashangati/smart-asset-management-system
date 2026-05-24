@@ -2,148 +2,158 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
-use App\Services\UserManagementService;
 use App\Models\User;
+use App\Notifications\UserCredentialsNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
-use Illuminate\Support\Facades\Log;
 
 class UserManagementController extends Controller
 {
-    protected UserManagementService $userService;
-
-    public function __construct(UserManagementService $userService)
-    {
-        $this->userService = $userService;
-    }
-
     /**
-     * Create user with credentials
-     * POST /api/users/create-with-credentials
+     * Create single user with generated password
+     * POST /api/admin/users/create
      */
-    public function createWithCredentials(Request $request): JsonResponse
+    public function createUser(Request $request): JsonResponse
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users',
+            'email' => 'required|email|unique:users,email',
             'department_id' => 'nullable|exists:departments,id',
-            'phone_number' => 'nullable|string',
-            'roles' => 'nullable|array',
-            'admin_can_reset_password' => 'nullable|boolean',
+            'role' => 'required|string|in:admin,asset_manager,viewer',
+            'send_credentials' => 'boolean',
+            'force_password_reset' => 'boolean',
         ]);
 
-        $user = $this->userService->createUserWithCredentials(
-            $request->validated(),
-            $request->admin_can_reset_password ?? true
-        );
+        $password = Str::random(12);
+
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => bcrypt($password),
+            'department_id' => $request->department_id,
+            'email_verified_at' => now(),
+        ]);
+
+        $user->assignRole($request->role);
+
+        // Send credentials via email
+        if ($request->send_credentials) {
+            $user->notify(new UserCredentialsNotification(
+                $user,
+                $password,
+                $request->force_password_reset ?? false
+            ));
+        }
 
         return response()->json([
             'success' => true,
-            'message' => 'User created and credentials sent',
-            'data' => $user,
+            'message' => 'User created successfully',
+            'data' => [
+                'user' => $user,
+                'password' => $request->send_credentials ? null : $password,
+            ],
         ], 201);
     }
 
     /**
-     * Reset user password
-     * POST /api/users/{user}/reset-password
+     * Bulk import users via CSV
+     * POST /api/admin/users/import
      */
-    public function resetPassword(Request $request, User $user): JsonResponse
+    public function bulkImportUsers(Request $request): JsonResponse
     {
         $request->validate([
-            'send_email' => 'nullable|boolean',
-        ]);
-
-        $temporaryPassword = $this->userService->resetUserPassword(
-            $user,
-            $request->send_email ?? true
-        );
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Password reset successfully',
-            'temporary_password' => $temporaryPassword,
-        ]);
-    }
-
-    /**
-     * Bulk import users from CSV
-     * POST /api/users/bulk-import
-     */
-    public function bulkImport(Request $request): JsonResponse
-    {
-        $request->validate([
-            'file' => 'required|file|mimes:csv,txt',
+            'file' => 'required|file|mimes:csv,txt|max:5120', // 5MB max
         ]);
 
         try {
-            $file = $request->file('file');
-            $rows = Excel::toArray([], $file)[0] ?? [];
+            $importedUsers = [];
+            $errors = [];
+            $row = 1;
 
-            if (empty($rows)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'CSV file is empty',
-                ], 422);
-            }
+            Excel::load($request->file('file'), function ($reader) use (&$importedUsers, &$errors, &$row) {
+                foreach ($reader->toArray() as $sheet) {
+                    foreach ($sheet as $cell) {
+                        $row++;
 
-            // Skip header row
-            $header = array_shift($rows);
-            $usersData = [];
+                        try {
+                            $validator = \Illuminate\Support\Facades\Validator::make($cell, [
+                                'name' => 'required|string|max:255',
+                                'email' => 'required|email|unique:users,email',
+                                'role' => 'required|string|in:admin,asset_manager,viewer',
+                                'department_id' => 'nullable|exists:departments,id',
+                            ]);
 
-            foreach ($rows as $row) {
-                if (empty($row[0])) {
-                    continue; // Skip empty rows
+                            if ($validator->fails()) {
+                                $errors[] = "Row {$row}: " . implode(', ', $validator->errors()->all());
+                                continue;
+                            }
+
+                            $password = Str::random(12);
+                            $user = User::create([
+                                'name' => $cell['name'],
+                                'email' => $cell['email'],
+                                'password' => bcrypt($password),
+                                'department_id' => $cell['department_id'] ?? null,
+                                'email_verified_at' => now(),
+                            ]);
+
+                            $user->assignRole($cell['role']);
+
+                            // Send credentials
+                            $user->notify(new UserCredentialsNotification($user, $password, true));
+
+                            $importedUsers[] = [
+                                'name' => $user->name,
+                                'email' => $user->email,
+                                'role' => $cell['role'],
+                            ];
+                        } catch (\Exception $e) {
+                            $errors[] = "Row {$row}: " . $e->getMessage();
+                        }
+                    }
                 }
-
-                $usersData[] = [
-                    'name' => $row[0] ?? '',
-                    'email' => $row[1] ?? '',
-                    'department_id' => $row[2] ?? null,
-                    'phone_number' => $row[3] ?? null,
-                    'roles' => isset($row[4]) ? explode(',', $row[4]) : [],
-                ];
-            }
-
-            $results = $this->userService->bulkImportUsers($usersData);
+            });
 
             return response()->json([
                 'success' => true,
-                'message' => 'Bulk import completed',
-                'results' => $results,
+                'message' => 'Users imported successfully',
+                'imported_count' => count($importedUsers),
+                'error_count' => count($errors),
+                'imported_users' => $importedUsers,
+                'errors' => $errors,
             ]);
         } catch (\Exception $e) {
-            Log::error('Bulk user import failed', ['error' => $e->getMessage()]);
-
             return response()->json([
                 'success' => false,
-                'message' => 'Bulk import failed: ' . $e->getMessage(),
-            ], 422);
+                'message' => 'Error importing users: ' . $e->getMessage(),
+            ], 400);
         }
     }
 
     /**
-     * Get bulk import template
-     * GET /api/users/bulk-import-template
+     * Regenerate user password
+     * POST /api/admin/users/{user}/regenerate-password
      */
-    public function getBulkImportTemplate(): mixed
+    public function regeneratePassword(Request $request, User $user): JsonResponse
     {
-        $filename = 'users-import-template-' . now()->format('Y-m-d') . '.csv';
-        $headers = [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => "attachment; filename={$filename}",
-        ];
+        $request->validate([
+            'send_email' => 'boolean',
+        ]);
 
-        $callback = function () {
-            $file = fopen('php://output', 'w');
-            fputcsv($file, ['Name', 'Email', 'Department ID', 'Phone Number', 'Roles (comma-separated)']);
-            fputcsv($file, ['John Doe', 'john@example.com', '1', '+1234567890', 'asset_manager']);
-            fputcsv($file, ['Jane Smith', 'jane@example.com', '2', '+0987654321', 'asset_manager,admin']);
-            fclose($file);
-        };
+        $password = Str::random(12);
+        $user->update(['password' => bcrypt($password)]);
 
-        return response()->stream($callback, 200, $headers);
+        if ($request->send_email) {
+            $user->notify(new UserCredentialsNotification($user, $password, true));
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Password regenerated successfully',
+            'password' => $request->send_email ? null : $password,
+        ]);
     }
 }
