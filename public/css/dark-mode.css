@@ -1,0 +1,322 @@
+/**
+ * Smart Asset Management System - Dark Mode Theme
+ * CSS Variables for theming support
+ */
+
+/* Dark Mode Colors */
+:root.dark-mode {
+    /* Primary Colors */
+    --color-primary: #3b82f6;
+    --color-primary-dark: #2563eb;
+    --color-primary-light: #60a5fa;
+
+    /* Background Colors */
+    --color-bg-primary: #0f172a;
+    --color-bg-secondary: #1e293b;
+    --color-bg-tertiary: #334155;
+    --color-bg-overlay: rgba(15, 23, 42, 0.5);
+
+    /* Text Colors */
+    --color-text-primary: #e2e8f0;
+    --color-text-secondary: #cbd5e1;
+    --color-text-tertiary: #94a3b8;
+    --color-text-muted: #64748b;
+
+    /* Border Colors */
+    --color-border-light: #475569;
+    --color-border-dark: #1e293b;
+
+    /* Status Colors */
+    --color-success: #22c55e;
+    --color-warning: #f59e0b;
+    --color-danger: #ef4444;
+    --color-info: #3b82f6;
+
+    /* UI Elements */
+    --color-card-bg: rgba(30, 41, 59, 0.8);
+    --color-card-border: #475569;
+    --color-input-bg: #1e293b;
+    --color-input-border: #334155;
+    --color-input-text: #e2e8f0;
+    --color-button-bg: #3b82f6;
+    --color-button-text: #ffffff;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+/* Light Mode Colors */
+:root.light-mode,
+:root:not(.dark-mode):not(.light-mode) {
+    /* Primary Colors */
+    --color-primary: #2563eb;
+    --color-primary-dark: #1d4ed8;
+    --color-primary-light: #3b82f6;
+
+    /* Background Colors */
+    --color-bg-primary: #ffffff;
+    --color-bg-secondary: #f8fafc;
+    --color-bg-tertiary: #e2e8f0;
+    --color-bg-overlay: rgba(255, 255, 255, 0.95);
+
+    /* Text Colors */
+    --color-text-primary: #1e293b;
+    --color-text-secondary: #334155;
+    --color-text-tertiary: #64748b;
+    --color-text-muted: #94a3b8;
+
+    /* Border Colors */
+    --color-border-light: #e2e8f0;
+    --color-border-dark: #cbd5e1;
+
+    /* Status Colors */
+    --color-success: #16a34a;
+    --color-warning: #d97706;
+    --color-danger: #dc2626;
+    --color-info: #2563eb;
+
+    /* UI Elements */
+    --color-card-bg: rgba(255, 255, 255, 0.8);
+    --color-card-border: #e2e8f0;
+    --color-input-bg: #f8fafc;
+    --color-input-border: #e2e8f0;
+    --color-input-text: #1e293b;
+    --color-button-bg: #2563eb;
+    --color-button-text: #ffffff;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+/* Global Dark Mode Application */
+:root.dark-mode {
+    color-scheme: dark;
+}
+
+:root.light-mode {
+    color-scheme: light;
+}
+
+/* Apply dark mode styles */
+:root.dark-mode body {
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-primary);
+}
+
+:root.dark-mode {
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-primary);
+}
+
+/* Cards and Containers */
+:root.dark-mode .content-card,
+:root.dark-mode .card,
+:root.dark-mode .modal {
+    background-color: var(--color-card-bg);
+    border-color: var(--color-card-border);
+}
+
+/* Input Fields */
+:root.dark-mode input,
+:root.dark-mode textarea,
+:root.dark-mode select {
+    background-color: var(--color-input-bg);
+    border-color: var(--color-input-border);
+    color: var(--color-input-text);
+}
+
+:root.dark-mode input:focus,
+:root.dark-mode textarea:focus,
+:root.dark-mode select:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Buttons */
+:root.dark-mode .btn-primary {
+    background-color: var(--color-button-bg);
+    color: var(--color-button-text);
+}
+
+:root.dark-mode .btn-primary:hover {
+    background-color: var(--color-primary-dark);
+}
+
+/* Tables */
+:root.dark-mode table {
+    background-color: var(--color-card-bg);
+    border-color: var(--color-card-border);
+}
+
+:root.dark-mode thead {
+    background-color: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+}
+
+:root.dark-mode tbody tr {
+    border-color: var(--color-card-border);
+    color: var(--color-text-primary);
+}
+
+:root.dark-mode tbody tr:hover {
+    background-color: var(--color-bg-secondary);
+}
+
+/* Links */
+:root.dark-mode a {
+    color: var(--color-primary-light);
+}
+
+:root.dark-mode a:hover {
+    color: var(--color-primary);
+}
+
+/* Headings */
+:root.dark-mode h1,
+:root.dark-mode h2,
+:root.dark-mode h3,
+:root.dark-mode h4,
+:root.dark-mode h5,
+:root.dark-mode h6 {
+    color: var(--color-text-primary);
+}
+
+/* Badges */
+:root.dark-mode .badge {
+    border-color: var(--color-border-light);
+}
+
+:root.dark-mode .badge-success {
+    background-color: rgba(34, 197, 94, 0.1);
+    color: #86efac;
+}
+
+:root.dark-mode .badge-warning {
+    background-color: rgba(251, 146, 60, 0.1);
+    color: #fb923c;
+}
+
+:root.dark-mode .badge-danger {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #f87171;
+}
+
+:root.dark-mode .badge-info {
+    background-color: rgba(59, 130, 246, 0.1);
+    color: #60a5fa;
+}
+
+/* Navbar */
+:root.dark-mode .navbar,
+:root.dark-mode header {
+    background-color: var(--color-bg-secondary);
+    border-color: var(--color-border-light);
+    color: var(--color-text-primary);
+}
+
+/* Sidebar */
+:root.dark-mode .sidebar {
+    background-color: var(--color-bg-secondary);
+    border-color: var(--color-border-light);
+    color: var(--color-text-primary);
+}
+
+:root.dark-mode .sidebar-item:hover {
+    background-color: var(--color-bg-tertiary);
+}
+
+/* Alerts and Messages */
+:root.dark-mode .alert-success {
+    background-color: rgba(34, 197, 94, 0.1);
+    border-color: var(--color-success);
+    color: #86efac;
+}
+
+:root.dark-mode .alert-warning {
+    background-color: rgba(251, 146, 60, 0.1);
+    border-color: var(--color-warning);
+    color: #fb923c;
+}
+
+:root.dark-mode .alert-danger {
+    background-color: rgba(239, 68, 68, 0.1);
+    border-color: var(--color-danger);
+    color: #f87171;
+}
+
+:root.dark-mode .alert-info {
+    background-color: rgba(59, 130, 246, 0.1);
+    border-color: var(--color-info);
+    color: #60a5fa;
+}
+
+/* Code */
+:root.dark-mode code {
+    background-color: var(--color-bg-tertiary);
+    color: #fbbf24;
+    border-color: var(--color-border-light);
+}
+
+:root.dark-mode pre {
+    background-color: var(--color-bg-secondary);
+    border-color: var(--color-border-light);
+    color: var(--color-text-primary);
+}
+
+/* Form Labels */
+:root.dark-mode label {
+    color: var(--color-text-secondary);
+}
+
+/* Tooltips */
+:root.dark-mode .tooltip {
+    background-color: var(--color-bg-secondary);
+    border-color: var(--color-border-light);
+    color: var(--color-text-primary);
+}
+
+/* Scrollbar - Webkit browsers */
+:root.dark-mode ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+:root.dark-mode ::-webkit-scrollbar-track {
+    background-color: var(--color-bg-secondary);
+}
+
+:root.dark-mode ::-webkit-scrollbar-thumb {
+    background-color: var(--color-border-light);
+    border-radius: 4px;
+}
+
+:root.dark-mode ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-primary);
+}
+
+/* Selection */
+:root.dark-mode ::selection {
+    background-color: var(--color-primary);
+    color: white;
+}
+
+/* Placeholder Text */
+:root.dark-mode ::placeholder {
+    color: var(--color-text-muted);
+}
+
+/* Focus States */
+:root.dark-mode *:focus {
+    outline-color: var(--color-primary);
+}
+
+/* Transitions */
+* {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
