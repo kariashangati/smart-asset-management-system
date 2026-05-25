@@ -52,9 +52,20 @@ Route::middleware(['auth', 'active.user'])->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::prefix('reports')->name('reports.')->group(function () {
-    Route::get('/assets', [App\Http\Controllers\Admin\ReportController::class, 'assets'])->name('assets');
-    Route::get('/tracking', [App\Http\Controllers\Admin\ReportController::class, 'tracking'])->name('tracking');
-    Route::get('/alerts', [App\Http\Controllers\Admin\ReportController::class, 'alerts'])->name('alerts');
+    Route::get('/assets', [App\Http\Controllers\Admin\ReportController::class, 'assets'])
+        ->name('assets');
+    Route::get('/assets/pdf', [App\Http\Controllers\Admin\ReportController::class, 'assetsPdf'])
+        ->name('assets.pdf');
+
+    Route::get('/tracking', [App\Http\Controllers\Admin\ReportController::class, 'tracking'])
+        ->name('tracking');
+    Route::get('/tracking/pdf', [App\Http\Controllers\Admin\ReportController::class, 'trackingPdf'])
+        ->name('tracking.pdf');
+
+    Route::get('/alerts', [App\Http\Controllers\Admin\ReportController::class, 'alerts'])
+        ->name('alerts');
+    Route::get('/alerts/pdf', [App\Http\Controllers\Admin\ReportController::class, 'alertsPdf'])
+        ->name('alerts.pdf');
 });
 
 /*
@@ -166,6 +177,19 @@ Route::resource('audit-logs', App\Http\Controllers\Admin\AuditLogController::cla
             Route::patch('/users/{user}/status', [UserController::class, 'toggleStatus'])
                 ->middleware('permission:users.update')
                 ->name('users.toggle-status');
+
+            /*
+            |--------------------------------------------------------------------------
+            | User Bulk Import & Password Regeneration (Admin)
+            |--------------------------------------------------------------------------
+            */
+            Route::post('/users/bulk-import', [UserController::class, 'bulkImport'])
+                ->middleware('permission:users.create')
+                ->name('users.bulk-import');
+
+            Route::post('/users/{user}/regenerate-password', [UserController::class, 'regeneratePassword'])
+                ->middleware('permission:users.update')
+                ->name('users.regenerate-password');
 
             /*
             |--------------------------------------------------------------------------
