@@ -1,4 +1,3 @@
-````markdown name=resources/views/reports/tracking-pdf.blade.php
 <!DOCTYPE html>
 <html>
 <head>
@@ -82,7 +81,12 @@
 
     <div class="summary">
         <p><strong>Total Entries:</strong> {{ $logs->count() }}</p>
-        <p><strong>Date Range:</strong> {{ $logs->min('recorded_at')?->format('d M Y') ?? '—' }} to {{ $logs->max('recorded_at')?->format('d M Y') ?? '—' }}</p>
+        <p>
+            <strong>Date Range:</strong>
+            {{ $logs->min('recorded_at') ? \Carbon\Carbon::parse($logs->min('recorded_at'))->format('d M Y') : '—' }}
+            to
+            {{ $logs->max('recorded_at') ? \Carbon\Carbon::parse($logs->max('recorded_at'))->format('d M Y') : '—' }}
+        </p>
     </div>
 
     <table>
@@ -121,4 +125,3 @@
     </div>
 </body>
 </html>
-````

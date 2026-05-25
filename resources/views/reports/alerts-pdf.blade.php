@@ -1,4 +1,3 @@
-````markdown name=resources/views/reports/alerts-pdf.blade.php
 <!DOCTYPE html>
 <html>
 <head>
@@ -102,13 +101,17 @@
 
     <div class="summary">
         <p><strong>Total Alerts:</strong> {{ $alerts->count() }}</p>
-        <p><strong>Critical:</strong> {{ $alerts->where('severity', 'critical')->count() }} | 
-           <strong>High:</strong> {{ $alerts->where('severity', 'high')->count() }} | 
-           <strong>Medium:</strong> {{ $alerts->where('severity', 'medium')->count() }} | 
-           <strong>Low:</strong> {{ $alerts->where('severity', 'low')->count() }}</p>
-        <p><strong>Unread:</strong> {{ $alerts->where('status', 'unread')->count() }} | 
-           <strong>Read:</strong> {{ $alerts->where('status', 'read')->count() }} | 
-           <strong>Resolved:</strong> {{ $alerts->where('status', 'resolved')->count() }}</p>
+        <p>
+            <strong>Critical:</strong> {{ $alerts->where('severity', 'critical')->count() }} |
+            <strong>High:</strong> {{ $alerts->where('severity', 'high')->count() }} |
+            <strong>Medium:</strong> {{ $alerts->where('severity', 'medium')->count() }} |
+            <strong>Low:</strong> {{ $alerts->where('severity', 'low')->count() }}
+        </p>
+        <p>
+            <strong>Unread:</strong> {{ $alerts->where('status', 'unread')->count() }} |
+            <strong>Read:</strong> {{ $alerts->where('status', 'read')->count() }} |
+            <strong>Resolved:</strong> {{ $alerts->where('status', 'resolved')->count() }}
+        </p>
     </div>
 
     <table>
@@ -149,4 +152,3 @@
     </div>
 </body>
 </html>
-````

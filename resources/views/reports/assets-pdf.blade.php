@@ -1,4 +1,3 @@
-````markdown name=resources/views/reports/assets-pdf.blade.php
 <!DOCTYPE html>
 <html>
 <head>
@@ -127,4 +126,3 @@
     </div>
 </body>
 </html>
-````
