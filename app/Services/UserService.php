@@ -16,18 +16,17 @@ class UserService
 
     public function create(array $data): User
     {
-        // Validate department assignment based on role
         $this->departmentService->validateManagerDepartmentAssignment(
             $data['role'],
             $data['department_id'] ?? null
         );
 
         $user = User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'phone' => $data['phone'] ?? null,
-            'status' => $data['status'],
-            'password' => $data['password'],
+            'name'          => $data['name'],
+            'email'         => $data['email'],
+            'phone'         => $data['phone'] ?? null,
+            'status'        => $data['status'],
+            'password'      => $data['password'],
             'department_id' => $data['department_id'] ?? null,
         ]);
 
@@ -49,20 +48,25 @@ class UserService
             ]);
         }
 
-        // Validate department assignment based on role
-        $this->departmentService->validateManagerDepartmentAssignment(
-            $data['role'],
-            $data['department_id'] ?? null
-        );
+        // For admin role, department_id must be null
+        // For asset_manager role, department_id is required
+        // We call validation only when role is changing or department_id is being set
+        $role          = $data['role'];
+        $departmentId  = isset($data['department_id']) && $data['department_id'] !== ''
+            ? (int) $data['department_id']
+            : null;
+
+        $this->departmentService->validateManagerDepartmentAssignment($role, $departmentId);
 
         $payload = [
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'phone' => $data['phone'] ?? null,
-            'status' => $data['status'],
-            'department_id' => $data['department_id'] ?? null,
+            'name'          => $data['name'],
+            'email'         => $data['email'],
+            'phone'         => $data['phone'] ?? null,
+            'status'        => $data['status'],
+            'department_id' => $departmentId,
         ];
 
+        // Only update password when a new one is supplied
         if (! empty($data['password'])) {
             $payload['password'] = $data['password'];
         }
