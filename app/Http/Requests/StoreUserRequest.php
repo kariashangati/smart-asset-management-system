@@ -4,45 +4,25 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 
 class StoreUserRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
-        return auth()->check() && auth()->user()->can('create', \App\Models\User::class);
+        return $this->user()?->can('users.create') ?? false;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array|string>
-     */
     public function rules(): array
     {
         return [
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users',
-            'department_id' => 'nullable|exists:departments,id',
-            'role' => 'nullable|string',
-            'email_notifications_enabled' => 'boolean',
-            'push_notifications_enabled' => 'boolean',
-        ];
-    }
-
-    /**
-     * Get custom messages for validator errors.
-     */
-    public function messages(): array
-    {
-        return [
-            'name.required' => 'User name is required',
-            'email.required' => 'Email address is required',
-            'email.email' => 'Email must be a valid email address',
-            'email.unique' => 'This email address is already registered',
-            'department_id.exists' => 'Selected department does not exist',
+            'name'     => ['required', 'string', 'max:150'],
+            'email'    => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
+            'phone'    => ['nullable', 'string', 'max:40'],
+            'status'   => ['required', Rule::in(\App\Models\User::STATUSES)],
+            'role'     => ['required', 'string', 'exists:roles,name'],
+            'department_id' => ['nullable', 'exists:departments,id'],
+            'password' => ['required', 'confirmed', Password::defaults()],
         ];
     }
 }
