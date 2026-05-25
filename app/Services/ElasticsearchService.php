@@ -2,93 +2,138 @@
 
 namespace App\Services;
 
-use Elasticsearch\ClientBuilder;
+use Elastic\Elasticsearch\ClientBuilder;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Log;
 
 class ElasticsearchService
 {
     protected $client;
-    protected $index = 'smart_assets';
+    protected string $index = 'smart_assets';
 
     public function __construct()
     {
-        $this->client = ClientBuilder::create()
-            ->setHosts(Config::get('integrations.elasticsearch_hosts'))
-            ->build();
+        try {
+            $this->client = ClientBuilder::create()
+                ->setHosts(Config::get('integrations.elasticsearch_hosts', ['localhost:9200']))
+                ->build();
+        } catch (\Exception $e) {
+            Log::warning('Elasticsearch connection failed: ' . $e->getMessage());
+            $this->client = null;
+        }
     }
 
     /**
-     * Index an asset
+     * Check if client is available
+     */
+    private function isAvailable(): bool
+    {
+        return $this->client !== null;
+    }
+
+    /**
+     * Index an asset document
+     * Note: 'type' parameter removed in Elasticsearch v8
      */
     public function indexAsset(array $data): void
     {
-        $this->client->index([
-            'index' => $this->index,
-            'type' => 'asset',
-            'id' => $data['id'],
-            'body' => [
-                'name' => $data['name'] ?? '',
-                'serial_number' => $data['serial_number'] ?? '',
-                'asset_type' => $data['asset_type'] ?? '',
-                'status' => $data['status'] ?? '',
-                'department_id' => $data['department_id'] ?? null,
-                'location' => $data['location'] ?? '',
-                'created_at' => $data['created_at'] ?? now(),
-            ],
-        ]);
+        if (!$this->isAvailable()) {
+            Log::warning('Elasticsearch not available — skipping asset index.');
+            return;
+        }
+
+        try {
+            $this->client->index([
+                'index' => $this->index,
+                'id'    => $data['id'],
+                'body'  => [
+                    'name'          => $data['name'] ?? '',
+                    'serial_number' => $data['serial_number'] ?? '',
+                    'asset_type'    => $data['asset_type'] ?? '',
+                    'status'        => $data['status'] ?? '',
+                    'department_id' => $data['department_id'] ?? null,
+                    'location'      => $data['location'] ?? '',
+                    'created_at'    => $data['created_at'] ?? now()->toIso8601String(),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Elasticsearch index error: ' . $e->getMessage(), [
+                'asset_id' => $data['id'] ?? null,
+            ]);
+        }
     }
 
     /**
      * Search assets
+     * Note: 'type' parameter removed in Elasticsearch v8
      */
     public function searchAssets(string $query, array $filters = []): array
     {
-        $body = [
-            'query' => [
-                'bool' => [
-                    'must' => [
-                        [
-                            'multi_match' => [
-                                'query' => $query,
-                                'fields' => ['name', 'serial_number', 'asset_type', 'location'],
-                            ],
-                        ],
+        if (!$this->isAvailable()) {
+            Log::warning('Elasticsearch not available — returning empty results.');
+            return [];
+        }
+
+        try {
+            $must = [
+                [
+                    'multi_match' => [
+                        'query'  => $query,
+                        'fields' => ['name', 'serial_number', 'asset_type', 'location'],
                     ],
                 ],
-            ],
-        ];
-
-        // Add filters
-        if (isset($filters['status'])) {
-            $body['query']['bool']['filter'][] = [
-                'term' => ['status' => $filters['status']],
             ];
-        }
 
-        if (isset($filters['department_id'])) {
-            $body['query']['bool']['filter'][] = [
-                'term' => ['department_id' => $filters['department_id']],
+            $filter = [];
+
+            if (isset($filters['status'])) {
+                $filter[] = ['term' => ['status' => $filters['status']]];
+            }
+
+            if (isset($filters['department_id'])) {
+                $filter[] = ['term' => ['department_id' => $filters['department_id']]];
+            }
+
+            $body = [
+                'query' => [
+                    'bool' => [
+                        'must'   => $must,
+                        'filter' => $filter,
+                    ],
+                ],
             ];
+
+            $result = $this->client->search([
+                'index' => $this->index,
+                'body'  => $body,
+            ]);
+
+            return $result['hits']['hits'] ?? [];
+
+        } catch (\Exception $e) {
+            Log::error('Elasticsearch search error: ' . $e->getMessage());
+            return [];
         }
-
-        $result = $this->client->search([
-            'index' => $this->index,
-            'type' => 'asset',
-            'body' => $body,
-        ]);
-
-        return $result['hits']['hits'] ?? [];
     }
 
     /**
-     * Delete asset from index
+     * Delete an asset from the index
      */
     public function deleteAsset(int $assetId): void
     {
-        $this->client->delete([
-            'index' => $this->index,
-            'type' => 'asset',
-            'id' => $assetId,
-        ]);
+        if (!$this->isAvailable()) {
+            return;
+        }
+
+        try {
+            $this->client->delete([
+                'index' => $this->index,
+                'id'    => $assetId,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Elasticsearch delete error: ' . $e->getMessage(), [
+                'asset_id' => $assetId,
+            ]);
+        }
     }
 }
