@@ -7,10 +7,8 @@ use App\Http\Requests\StoreAssetRequest;
 use App\Http\Requests\UpdateAssetRequest;
 use App\Http\Resources\AssetResource;
 use App\Models\Asset;
-use App\Policies\AssetPolicy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
 
 class AssetController extends Controller
 {
@@ -19,4 +17,191 @@ class AssetController extends Controller
      * GET /api/assets
      */
     public function index(Request $request): JsonResponse
-    {\n        $this->authorize('viewAny', Asset::class);\n\n        $query = Asset::with(['department', 'latestLocation', 'trackerDevice']);\n\n        // Filter by department\n        if ($request->has('department_id')) {\n            $query->where('department_id', $request->department_id);\n        }\n\n        // Filter by status\n        if ($request->has('status')) {\n            $query->where('status', $request->status);\n        }\n\n        // Filter by asset type\n        if ($request->has('asset_type')) {\n            $query->where('asset_type', $request->asset_type);\n        }\n\n        // Search by name or serial number\n        if ($request->has('search')) {\n            $search = $request->search;\n            $query->where(function ($q) use ($search) {\n                $q->where('name', 'like', \"%{$search}%\")\n                    ->orWhere('serial_number', 'like', \"%{$search}%\");\n            });\n        }\n\n        $assets = $query->paginate($request->per_page ?? 15);\n\n        return response()->json([\n            'success' => true,\n            'message' => 'Assets retrieved successfully',\n            'data' => AssetResource::collection($assets->items()),\n            'pagination' => [\n                'total' => $assets->total(),\n                'per_page' => $assets->perPage(),\n                'current_page' => $assets->currentPage(),\n                'last_page' => $assets->lastPage(),\n            ],\n        ]);\n    }\n\n    /**\n     * Store a newly created asset\n     * POST /api/assets\n     */\n    public function store(StoreAssetRequest $request): JsonResponse\n    {\n        $this->authorize('create', Asset::class);\n\n        $asset = Asset::create(array_merge(\n            $request->validated(),\n            ['created_by' => auth()->id()]\n        ));\n\n        return response()->json([\n            'success' => true,\n            'message' => 'Asset created successfully',\n            'data' => new AssetResource($asset->load(['department', 'latestLocation', 'trackerDevice'])),\n        ], 201);\n    }\n\n    /**\n     * Display the specified asset\n     * GET /api/assets/{id}\n     */\n    public function show(Asset $asset): JsonResponse\n    {\n        $this->authorize('view', $asset);\n\n        $asset->load(['department', 'latestLocation', 'trackerDevice', 'geofences']);\n\n        return response()->json([\n            'success' => true,\n            'data' => new AssetResource($asset),\n        ]);\n    }\n\n    /**\n     * Update the specified asset\n     * PUT /api/assets/{id}\n     */\n    public function update(UpdateAssetRequest $request, Asset $asset): JsonResponse\n    {\n        $this->authorize('update', $asset);\n\n        $asset->update($request->validated());\n\n        return response()->json([\n            'success' => true,\n            'message' => 'Asset updated successfully',\n            'data' => new AssetResource($asset->load(['department', 'latestLocation', 'trackerDevice'])),\n        ]);\n    }\n\n    /**\n     * Delete the specified asset\n     * DELETE /api/assets/{id}\n     */\n    public function destroy(Asset $asset): JsonResponse\n    {\n        $this->authorize('delete', $asset);\n\n        $asset->delete();\n\n        return response()->json([\n            'success' => true,\n            'message' => 'Asset deleted successfully',\n        ]);\n    }\n\n    /**\n     * Get assets by department\n     * GET /api/assets/department/{department_id}\n     */\n    public function getByDepartment(Request $request, int $departmentId): JsonResponse\n    {\n        $assets = Asset::where('department_id', $departmentId)\n            ->with(['department', 'latestLocation', 'trackerDevice'])\n            ->paginate($request->per_page ?? 15);\n\n        return response()->json([\n            'success' => true,\n            'data' => AssetResource::collection($assets->items()),\n            'pagination' => [\n                'total' => $assets->total(),\n                'per_page' => $assets->perPage(),\n                'current_page' => $assets->currentPage(),\n                'last_page' => $assets->lastPage(),\n            ],\n        ]);\n    }\n\n    /**\n     * Get asset location history\n     * GET /api/assets/{id}/location-history\n     */\n    public function getLocationHistory(Request $request, Asset $asset): JsonResponse\n    {\n        $this->authorize('view', $asset);\n\n        $locations = $asset->locationLogs()\n            ->orderBy('recorded_at', 'desc')\n            ->paginate($request->per_page ?? 50);\n\n        return response()->json([\n            'success' => true,\n            'data' => $locations->items(),\n            'pagination' => [\n                'total' => $locations->total(),\n                'per_page' => $locations->perPage(),\n                'current_page' => $locations->currentPage(),\n                'last_page' => $locations->lastPage(),\n            ],\n        ]);\n    }\n\n    /**\n     * Get asset alerts\n     * GET /api/assets/{id}/alerts\n     */\n    public function getAlerts(Request $request, Asset $asset): JsonResponse\n    {\n        $this->authorize('view', $asset);\n\n        $alerts = $asset->alerts()\n            ->orderBy('triggered_at', 'desc')\n            ->paginate($request->per_page ?? 20);\n\n        return response()->json([\n            'success' => true,\n            'data' => $alerts->items(),\n            'pagination' => [\n                'total' => $alerts->total(),\n                'per_page' => $alerts->perPage(),\n                'current_page' => $alerts->currentPage(),\n                'last_page' => $alerts->lastPage(),\n            ],\n        ]);\n    }\n}\n
+    {
+        $this->authorize('viewAny', Asset::class);
+
+        $query = Asset::with(['department', 'latestLocation', 'trackerDevice']);
+
+        // Filter by department
+        if ($request->filled('department_id')) {
+            $query->where('department_id', $request->department_id);
+        }
+
+        // Filter by status
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        // Filter by asset type
+        if ($request->filled('asset_type')) {
+            $query->where('asset_type', $request->asset_type);
+        }
+
+        // Search by name or serial number
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('serial_number', 'like', "%{$search}%")
+                  ->orWhere('asset_code', 'like', "%{$search}%");
+            });
+        }
+
+        $assets = $query->paginate($request->input('per_page', 15));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Assets retrieved successfully',
+            'data'    => AssetResource::collection($assets->items()),
+            'pagination' => [
+                'total'        => $assets->total(),
+                'per_page'     => $assets->perPage(),
+                'current_page' => $assets->currentPage(),
+                'last_page'    => $assets->lastPage(),
+            ],
+        ]);
+    }
+
+    /**
+     * Store a newly created asset
+     * POST /api/assets
+     */
+    public function store(StoreAssetRequest $request): JsonResponse
+    {
+        $this->authorize('create', Asset::class);
+
+        $asset = Asset::create(array_merge(
+            $request->validated(),
+            ['created_by' => auth()->id()]
+        ));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Asset created successfully',
+            'data'    => new AssetResource(
+                $asset->load(['department', 'latestLocation', 'trackerDevice'])
+            ),
+        ], 201);
+    }
+
+    /**
+     * Display the specified asset
+     * GET /api/assets/{id}
+     */
+    public function show(Asset $asset): JsonResponse
+    {
+        $this->authorize('view', $asset);
+
+        $asset->load(['department', 'latestLocation', 'trackerDevice', 'geofences']);
+
+        return response()->json([
+            'success' => true,
+            'data'    => new AssetResource($asset),
+        ]);
+    }
+
+    /**
+     * Update the specified asset
+     * PUT /api/assets/{id}
+     */
+    public function update(UpdateAssetRequest $request, Asset $asset): JsonResponse
+    {
+        $this->authorize('update', $asset);
+
+        $asset->update($request->validated());
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Asset updated successfully',
+            'data'    => new AssetResource(
+                $asset->load(['department', 'latestLocation', 'trackerDevice'])
+            ),
+        ]);
+    }
+
+    /**
+     * Delete the specified asset
+     * DELETE /api/assets/{id}
+     */
+    public function destroy(Asset $asset): JsonResponse
+    {
+        $this->authorize('delete', $asset);
+
+        $asset->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Asset deleted successfully',
+        ]);
+    }
+
+    /**
+     * Get assets by department
+     * GET /api/assets/department/{department_id}
+     */
+    public function getByDepartment(Request $request, int $departmentId): JsonResponse
+    {
+        $assets = Asset::where('department_id', $departmentId)
+            ->with(['department', 'latestLocation', 'trackerDevice'])
+            ->paginate($request->input('per_page', 15));
+
+        return response()->json([
+            'success' => true,
+            'data'    => AssetResource::collection($assets->items()),
+            'pagination' => [
+                'total'        => $assets->total(),
+                'per_page'     => $assets->perPage(),
+                'current_page' => $assets->currentPage(),
+                'last_page'    => $assets->lastPage(),
+            ],
+        ]);
+    }
+
+    /**
+     * Get asset location history
+     * GET /api/assets/{id}/location-history
+     */
+    public function getLocationHistory(Request $request, Asset $asset): JsonResponse
+    {
+        $this->authorize('view', $asset);
+
+        $locations = $asset->locationLogs()
+            ->orderBy('recorded_at', 'desc')
+            ->paginate($request->input('per_page', 50));
+
+        return response()->json([
+            'success' => true,
+            'data'    => $locations->items(),
+            'pagination' => [
+                'total'        => $locations->total(),
+                'per_page'     => $locations->perPage(),
+                'current_page' => $locations->currentPage(),
+                'last_page'    => $locations->lastPage(),
+            ],
+        ]);
+    }
+
+    /**
+     * Get alerts for a specific asset
+     * GET /api/assets/{id}/alerts
+     */
+    public function getAlerts(Request $request, Asset $asset): JsonResponse
+    {
+        $this->authorize('view', $asset);
+
+        $alerts = $asset->alerts()
+            ->orderBy('triggered_at', 'desc')
+            ->paginate($request->input('per_page', 20));
+
+        return response()->json([
+            'success' => true,
+            'data'    => $alerts->items(),
+            'pagination' => [
+                'total'        => $alerts->total(),
+                'per_page'     => $alerts->perPage(),
+                'current_page' => $alerts->currentPage(),
+                'last_page'    => $alerts->lastPage(),
+            ],
+        ]);
+    }
+}

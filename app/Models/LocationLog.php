@@ -10,6 +10,10 @@ class LocationLog extends Model
 {
     use HasFactory;
 
+    // No LogsActivity trait here intentionally —
+    // location logs are high-frequency records that
+    // should never trigger audit log entries
+
     protected $fillable = [
         'asset_id',
         'tracker_device_id',
@@ -23,13 +27,13 @@ class LocationLog extends Model
     ];
 
     protected $casts = [
-        'latitude' => 'float',
-        'longitude' => 'float',
-        'speed' => 'float',
-        'motion_detected' => 'boolean',
-        'processed' => 'boolean',
-        'recorded_at' => 'datetime',
-        'received_at' => 'datetime',
+        'latitude'         => 'float',
+        'longitude'        => 'float',
+        'speed'            => 'float',
+        'motion_detected'  => 'boolean',
+        'processed'        => 'boolean',
+        'recorded_at'      => 'datetime',
+        'received_at'      => 'datetime',
     ];
 
     /**
