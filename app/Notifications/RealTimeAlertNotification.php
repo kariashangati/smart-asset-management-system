@@ -44,23 +44,17 @@ class RealTimeAlertNotification extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         $severity = strtoupper($this->alert->severity);
-        $color = match ($this->alert->severity) {
-            'critical' => '#dc2626',
-            'warning' => '#f59e0b',
-            'info' => '#3b82f6',
-            default => '#6b7280',
-        };
 
         return (new MailMessage)
             ->subject("[$severity] Asset Alert: {$this->alert->asset->name}")
             ->greeting("Alert Notification")
-            ->line("Asset: **{$this->alert->asset->name}**")
-            ->line("Type: {$this->alert->alert_type}")
-            ->line("Severity: <span style='color: $color; font-weight: bold;'>$severity</span>")
-            ->line("Description: {$this->alert->description}")
-            ->line("Time: {$this->alert->created_at->format('Y-m-d H:i:s')}")
-            ->action('View Alert Details', url("/alerts/{$this->alert->id}"))
-            ->markdown('emails.alert-notification');
+            ->line("**Asset:** {$this->alert->asset->name}")
+            ->line("**Type:** {$this->alert->alert_type}")
+            ->line("**Severity:** {$severity}")
+            ->line("**Description:** {$this->alert->description}")
+            ->line("**Time:** {$this->alert->created_at->format('Y-m-d H:i:s')}")
+            ->action('View Alert Details', route('admin.alerts.show', $this->alert))
+            ->line('Please log in to take necessary action.');
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 
 class AdminDashboardController extends Controller
@@ -12,7 +13,9 @@ class AdminDashboardController extends Controller
      */
     public function metrics(): JsonResponse
     {
-        $this->authorize('isAdmin');
+        if (!auth()->user()?->isAdmin()) {
+            abort(403, 'Unauthorized');
+        }
 
         $totalAssets = \App\Models\Asset::count();
         $activeAssets = \App\Models\Asset::where('status', 'active')->count();
@@ -58,7 +61,9 @@ class AdminDashboardController extends Controller
      */
     public function systemHealth(): JsonResponse
     {
-        $this->authorize('isAdmin');
+        if (!auth()->user()?->isAdmin()) {
+            abort(403, 'Unauthorized');
+        }
 
         $queueSize = \Illuminate\Support\Facades\DB::table('jobs')->count();
         $failedJobs = \Illuminate\Support\Facades\DB::table('failed_jobs')->count();

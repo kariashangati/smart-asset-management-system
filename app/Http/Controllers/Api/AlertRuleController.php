@@ -50,7 +50,7 @@ class AlertRuleController extends Controller
         ]);
 
         $rule = AlertRule::create([
-            ...validated,
+            ...$validated,
             'created_by' => auth()->id(),
         ]);
 

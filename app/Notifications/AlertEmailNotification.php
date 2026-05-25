@@ -51,7 +51,7 @@ class AlertEmailNotification extends Notification implements ShouldQueue
             ->line('**Type:** ' . str_replace('_', ' ', ucfirst($this->alert->alert_type)))
             ->line('**Time:** ' . $this->alert->triggered_at->format('M d, Y H:i:s'))
             ->line('**Details:** ' . $this->alert->message)
-            ->action('View Alert', route('alerts.show', $this->alert->id))
+            ->action('View Alert', route('admin.alerts.show', $this->alert))
             ->line('Location: ' . $this->alert->latitude . ', ' . $this->alert->longitude)
             ->line('---')
             ->line('Smart Asset Management System');
