@@ -51,9 +51,21 @@
         @can('assets.view')
             <a
                 href="{{ route('admin.assets.index') }}"
-                class="nav-link {{ request()->routeIs('admin.assets.*') ? 'active' : '' }}"
+                class="nav-link {{ request()->routeIs('admin.assets.index') ? 'active' : '' }}"
             >
                 Assets
+            </a>
+        @endcan
+
+        @can('assets.view')
+            <a
+                href="#"
+                onclick="event.preventDefault()"
+                class="nav-link {{ request()->routeIs('admin.assets.rules.*') ? 'active' : '' }}"
+                style="padding-left: 2rem; font-size: 0.9rem;"
+                id="alertRulesNavLink"
+            >
+                ↳ Alert Rules
             </a>
         @endcan
 

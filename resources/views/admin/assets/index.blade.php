@@ -55,6 +55,7 @@
                     data-category-id="{{ $asset->asset_category_id }}"
                     data-department-id="{{ $asset->department_id }}"
                     data-purchase-date="{{ $asset->purchase_date?->format('Y-m-d') }}"
+                    data-asset-value="{{ $asset->asset_value }}"
                     data-status="{{ $asset->status }}"
                     data-description="{{ $asset->description }}"
                     data-image-preview="{{ $asset->image ? Storage::url($asset->image) : '' }}">
@@ -76,7 +77,7 @@
                     </td>
                     <td class="inline-actions">
                         <button type="button" class="btn btn-outline edit-asset-btn" data-asset-id="{{ $asset->id }}">Edit</button>
-                        <form method="POST" action="{{ route('admin.assets.destroy', $asset) }}" class="js-confirm-delete" data-title="Delete asset" data-text="Asset {{ $asset->asset_code }} will be permanently removed." style="display: inline;">
+                        <form method="POST" action="{{ route('admin.assets.destroy', $asset) }}" class="js-confirm-delete" data-title="Delete asset" data-text="Asset {{ $asset->asset_code }} will be permanently removed." style="display:inline;">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="btn btn-danger">Delete</button>
@@ -136,6 +137,14 @@
                     <div class="form-group">
                         <label>Purchase date</label>
                         <input type="date" name="purchase_date">
+                    </div>
+                    <div class="form-group">
+                        <label>Asset value (TZS)</label>
+                        <input type="number"
+                               name="asset_value"
+                               min="0"
+                               step="0.01"
+                               placeholder="e.g. 5000000">
                     </div>
                     <div class="form-group">
                         <label>Status *</label>
@@ -214,6 +223,15 @@
                         <input type="date" name="purchase_date" id="edit_purchase_date">
                     </div>
                     <div class="form-group">
+                        <label>Asset value (TZS)</label>
+                        <input type="number"
+                               name="asset_value"
+                               id="edit_asset_value"
+                               min="0"
+                               step="0.01"
+                               placeholder="e.g. 5000000">
+                    </div>
+                    <div class="form-group">
                         <label>Status *</label>
                         <select name="status" id="edit_status" required>
                             <option value="active">Active</option>
@@ -258,6 +276,7 @@
                 document.getElementById('edit_asset_category_id').value = row.dataset.categoryId || '';
                 document.getElementById('edit_department_id').value = row.dataset.departmentId || '';
                 document.getElementById('edit_purchase_date').value = row.dataset.purchaseDate || '';
+                document.getElementById('edit_asset_value').value = row.dataset.assetValue || '';
                 document.getElementById('edit_status').value = row.dataset.status || 'active';
                 document.getElementById('edit_description').value = row.dataset.description || '';
 

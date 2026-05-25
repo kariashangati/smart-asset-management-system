@@ -68,5 +68,13 @@
             </div>
         </div>
     </div>
+    <div class="card-footer">
+        <a href="{{ route('admin.assets.rules.index', $asset) }}" class="btn btn-primary">
+            Manage Alert Rules
+        </a>
+        <a href="{{ route('admin.assets.index') }}" class="btn btn-secondary">
+            Back to Assets
+        </a>
+    </div>
 </div>
 @endsection

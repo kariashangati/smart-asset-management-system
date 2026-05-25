@@ -223,6 +223,31 @@ Route::resource('audit-logs', App\Http\Controllers\Admin\AuditLogController::cla
 
             /*
             |--------------------------------------------------------------------------
+            | Asset Alert Rules (Admin)
+            |--------------------------------------------------------------------------
+            */
+            Route::get('/assets/{asset}/rules', [App\Http\Controllers\Admin\AssetAlertRuleController::class, 'index'])
+                ->middleware('permission:assets.view')
+                ->name('assets.rules.index');
+
+            Route::post('/assets/{asset}/rules', [App\Http\Controllers\Admin\AssetAlertRuleController::class, 'store'])
+                ->middleware('permission:assets.update')
+                ->name('assets.rules.store');
+
+            Route::put('/assets/{asset}/rules/{rule}', [App\Http\Controllers\Admin\AssetAlertRuleController::class, 'update'])
+                ->middleware('permission:assets.update')
+                ->name('assets.rules.update');
+
+            Route::patch('/assets/{asset}/rules/{rule}/toggle', [App\Http\Controllers\Admin\AssetAlertRuleController::class, 'toggle'])
+                ->middleware('permission:assets.update')
+                ->name('assets.rules.toggle');
+
+            Route::delete('/assets/{asset}/rules/{rule}', [App\Http\Controllers\Admin\AssetAlertRuleController::class, 'destroy'])
+                ->middleware('permission:assets.delete')
+                ->name('assets.rules.destroy');
+
+            /*
+            |--------------------------------------------------------------------------
             | Devices
             |--------------------------------------------------------------------------
             */
