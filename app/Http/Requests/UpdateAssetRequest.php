@@ -14,7 +14,7 @@ class UpdateAssetRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'asset_code' => 'required|string|max:255|unique:assets,asset_code,' . $this->asset,
+            'asset_code' => 'required|string|max:255|unique:assets,asset_code,' . $this->asset->id,
             'name' => 'required|string|max:255',
             'serial_number' => 'nullable|string|max:255',
             'asset_category_id' => 'required|exists:asset_categories,id',

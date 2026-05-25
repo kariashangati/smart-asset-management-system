@@ -15,18 +15,22 @@ class Asset extends Model
     use HasFactory, LogsActivity;
 
     protected $fillable = [
+        'asset_code',
         'name',
         'description',
         'asset_type',
         'serial_number',
         'status',
         'department_id',
+        'asset_category_id',
         'tracker_device_id',
         'asset_value',
         'purchase_date',
         'location',
         'notes',
+        'image',
         'created_by',
+        'updated_by',
     ];
 
     protected $casts = [
