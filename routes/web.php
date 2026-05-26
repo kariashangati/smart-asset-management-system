@@ -57,17 +57,6 @@ Route::prefix('reports')->name('reports.')->group(function () {
     Route::get('/alerts', [App\Http\Controllers\Admin\ReportController::class, 'alerts'])->name('alerts');
 });
 
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-// API Dashboard (web-authenticated, for blade-embedded uses)
-Route::middleware(['auth', 'active.user'])->prefix('api')->group(function () {
-    Route::get('/dashboard/metrics', [ApiDashboardController::class, 'metrics']);
-    Route::get('/dashboard/charts', [ApiDashboardController::class, 'charts']);
-    Route::get('/dashboard/health', [ApiDashboardController::class, 'health']);
-});
-=======
->>>>>>> 603d931 (resolve conflicts)
 /*
 |--------------------------------------------------------------------------
 | Audit Logs (Admin)
@@ -442,7 +431,4 @@ Route::resource('audit-logs', App\Http\Controllers\Admin\AuditLogController::cla
                     ->name('destroy');
             });
         });
-<<<<<<< HEAD
-});
-=======
 });
