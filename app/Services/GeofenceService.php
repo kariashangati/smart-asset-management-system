@@ -187,7 +187,7 @@ class GeofenceService
         ?Carbon $to = null
     ) {
         $query = Alert::where('asset_id', $asset->id)
-            ->where('alert_type', 'geofence_breach')
+            ->where('alert_type', 'outside_geofence')
             ->orderBy('triggered_at', 'desc');
 
         if ($from) {

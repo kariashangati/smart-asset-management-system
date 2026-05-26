@@ -56,16 +56,24 @@
 
         {{-- Geofences (actual route) --}}
         @can('geofences.view')
+            <div class="sidebar-group">
+                <span>Zones</span>
+                <small>Geographical boundaries</small>
+            </div>
             <a
                 href="{{ route('manager.geofences.index') }}"
                 class="nav-link {{ request()->routeIs('manager.geofences.*') ? 'active' : '' }}"
             >
-                Geofences
+                My Geofences
             </a>
         @endcan
 
         {{-- Alerts (actual route) --}}
         @can('alerts.view')
+            <div class="sidebar-group">
+                <span>Alerts</span>
+                <small>Issue monitoring</small>
+            </div>
             <a
                 href="{{ route('manager.alerts.index') }}"
                 class="nav-link {{ request()->routeIs('manager.alerts.*') ? 'active' : '' }}"
