@@ -108,6 +108,13 @@
                     Location History
                 </a>
             @endcan
+
+            <a
+                href="{{ route('admin.alerts.index') }}"
+                class="nav-link {{ request()->routeIs('admin.alerts.*') ? 'active' : '' }}"
+            >
+                Alert Monitoring
+            </a>
         @endcanany
 
         {{-- REPORTS GROUP --}}

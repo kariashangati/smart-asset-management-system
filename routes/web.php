@@ -363,6 +363,22 @@ Route::resource('audit-logs', App\Http\Controllers\Admin\AuditLogController::cla
 
             /*
             |--------------------------------------------------------------------------
+            | Assets (Manager)
+            |--------------------------------------------------------------------------
+            */
+            Route::resource('assets', App\Http\Controllers\Manager\AssetController::class);
+
+            /*
+            |--------------------------------------------------------------------------
+            | Reports (Manager)
+            |--------------------------------------------------------------------------
+            */
+            Route::prefix('reports')->name('reports.')->group(function () {
+                Route::get('/alerts', [App\Http\Controllers\Manager\ReportController::class, 'alerts'])->name('alerts');
+            });
+
+            /*
+            |--------------------------------------------------------------------------
             | Tracking (Manager)
             |--------------------------------------------------------------------------
             */

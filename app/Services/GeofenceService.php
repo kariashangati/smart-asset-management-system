@@ -58,7 +58,7 @@ class GeofenceService
             // Check if there's an existing unresolved breach alert for this geofence
             $existingAlert = Alert::where('asset_id', $asset->id)
                 ->where('tracker_device_id', $trackerDevice->id)
-                ->where('alert_type', 'geofence_breach')
+                ->where('alert_type', 'outside_geofence')
                 ->whereIn('status', ['unread', 'read'])
                 ->orderBy('triggered_at', 'desc')
                 ->first();
@@ -112,7 +112,7 @@ class GeofenceService
         Alert::create([
             'asset_id' => $asset->id,
             'tracker_device_id' => $trackerDevice->id,
-            'alert_type' => 'geofence_breach',
+            'alert_type' => 'outside_geofence',
             'severity' => $severity,
             'title' => "Geofence Breach: {$asset->name}",
             'message' => "Asset '{$asset->name}' has left geofence '{$geofence->name}'. " .

@@ -27,7 +27,7 @@
     <div class="table-wrap">
         <table class="app-table" data-datatable="true" id="devices-table">
             <thead>
-                <tr><th>Device Code</th><th>Name</th><th>IMEI</th><th>Status</th><th>Last seen</th><th>Assigned to</th><th>Actions</th></tr>
+                <tr><th>Device Code</th><th>Name</th><th>IMEI</th><th>Status</th><th>Last seen</th><th>Assigned to</th><th>Department</th><th>Actions</th></tr>
             </thead>
             <tbody>
                 @foreach($devices as $device)
@@ -46,6 +46,7 @@
                     <td><span class="badge {{ $device->status === 'active' ? 'badge-success' : ($device->status === 'inactive' ? 'badge-warning' : 'badge-soft') }}">{{ ucfirst($device->status) }}</span></td>
                     <td>{{ $device->last_seen_at ? $device->last_seen_at->diffForHumans() : 'Never' }}</td>
                     <td>{{ $device->activeAssignment->asset->name ?? 'Not assigned' }}</td>
+                    <td>{{ $device->activeAssignment->asset->department->name ?? '—' }}</td>
                     <td class="inline-actions">
                         <button type="button" class="btn btn-outline edit-device-btn" data-device-id="{{ $device->id }}">Edit</button>
                         <form method="POST" action="{{ route('admin.devices.destroy', $device) }}" class="js-confirm-delete" data-title="Delete device" data-text="Device {{ $device->device_code }} will be removed." style="display: inline;">

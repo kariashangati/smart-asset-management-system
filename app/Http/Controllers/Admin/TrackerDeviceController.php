@@ -12,7 +12,7 @@ class TrackerDeviceController extends Controller
 {
     public function index()
     {
-        $devices = TrackerDevice::with('activeAssignment.asset')->get();
+        $devices = TrackerDevice::with('activeAssignment.asset.department')->get();
         return view('admin.devices.index', compact('devices'));
     }
 

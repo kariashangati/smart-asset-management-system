@@ -39,11 +39,20 @@
             @endcan
         @endcanany
 
-        {{-- Assets (Placeholder – no manager asset routes yet) --}}
-        <div class="sidebar-group">
-            <span>Assets</span>
-            <small>Asset list and registration</small>
-        </div>
+        {{-- Assets --}}
+        @can('assets.view')
+            <div class="sidebar-group">
+                <span>Assets</span>
+                <small>Asset list and registration</small>
+            </div>
+
+            <a
+                href="{{ route('manager.assets.index') }}"
+                class="nav-link {{ request()->routeIs('manager.assets.*') ? 'active' : '' }}"
+            >
+                My Department Assets
+            </a>
+        @endcan
 
         {{-- Geofences (actual route) --}}
         @can('geofences.view')
@@ -62,6 +71,20 @@
                 class="nav-link {{ request()->routeIs('manager.alerts.*') ? 'active' : '' }}"
             >
                 Alerts
+            </a>
+        @endcan
+
+        {{-- Reports --}}
+        @can('reports.view')
+            <div class="sidebar-group">
+                <span>Reports</span>
+                <small>Operational insights</small>
+            </div>
+            <a
+                href="{{ route('manager.reports.alerts') }}"
+                class="nav-link {{ request()->routeIs('manager.reports.alerts') ? 'active' : '' }}"
+            >
+                Department Alerts
             </a>
         @endcan
     </nav>
