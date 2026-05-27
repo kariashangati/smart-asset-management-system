@@ -104,7 +104,7 @@ class Asset extends Model
  */
 public function activeAssignment()
 {
-    return $this->hasOne(DeviceAssignment::class)
-        ->whereNull('returned_at');
+   return $this->hasOne(AssetDeviceAssignment::class)
+    ->where('is_active', true);
 }
 }
