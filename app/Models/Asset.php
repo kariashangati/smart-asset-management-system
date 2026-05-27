@@ -98,4 +98,13 @@ class Asset extends Model
     {
         return $this->hasMany(CustomAlertRule::class);
     }
+
+    /**
+ * Active assignment relationship
+ */
+public function activeAssignment()
+{
+    return $this->hasOne(DeviceAssignment::class)
+        ->whereNull('returned_at');
+}
 }
