@@ -1,58 +1,123 @@
 @extends('layouts.admin')
 
+@section('page_title', 'Live Asset Tracking')
+
 @section('content')
-<div class="page-heading">
-    <div>
-        <p class="page-eyebrow">Real-time</p>
-        <h1>Live Asset Map</h1>
-        <p class="breadcrumb-trail">
-            <a href="{{ route('admin.dashboard') }}">Dashboard</a> / <span>Live Map</span>
-        </p>
+<div class="card mb-4">
+    <div class="card-header bg-white">
+        <h5 class="mb-0">Map Filters</h5>
+    </div>
+    <div class="card-body">
+        <form method="GET" action="{{ route('admin.tracking.live-map') }}" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Department</label>
+                <select name="department_id" class="form-select">
+                    <option value="">All Departments</option>
+                    @foreach($departments as $dept)
+                        <option value="{{ $dept->id }}" {{ request('department_id') == $dept->id ? 'selected' : '' }}>
+                            {{ $dept->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Category</label>
+                <select name="category_id" class="form-select">
+                    <option value="">All Categories</option>
+                    @foreach($categories as $cat)
+                        <option value="{{ $cat->id }}" {{ request('category_id') == $cat->id ? 'selected' : '' }}>
+                            {{ $cat->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-select">
+                    <option value="">All Status</option>
+                    <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
+                    <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-center">
+                <div class="form-check mt-4">
+                    <input class="form-check-input" type="checkbox" name="actual" id="actualFilter" value="1" {{ request('actual') ? 'checked' : '' }}>
+                    <label class="form-check-label" for="actualFilter">
+                        Has Location Only
+                    </label>
+                </div>
+            </div>
+            <div class="col-md-2 d-flex align-items-end gap-2">
+                <button type="submit" class="btn btn-primary flex-grow-1">Apply</button>
+                <a href="{{ route('admin.tracking.live-map') }}" class="btn btn-light">Reset</a>
+            </div>
+        </form>
     </div>
 </div>
 
-<div class="content-card">
-    <div class="section-header">
-        <div>
-            <h2>Asset locations</h2>
-            <p>Last known positions of all tracked assets.</p>
-        </div>
-    </div>
-    <div id="map" style="height: 500px; width: 100%; border-radius: var(--radius-md);"></div>
-</div>
+<div id="map" style="height: 700px; width: 100%; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"></div>
 
-@push('styles')
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<style>
-    #map { z-index: 1; }
-</style>
-@endpush
-
-@push('scripts')
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+@section('scripts')
+<script src="https://maps.googleapis.com/maps/api/js?key={{ env('GOOGLE_MAPS_API_KEY') }}&callback=initMap" async defer></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        var map = L.map('map').setView([-6.792354, 39.208328], 13); // Default to Dar es Salaam
+    function initMap() {
+        const assets = @json($assets);
+        const mapElement = document.getElementById('map');
+        
+        const map = new google.maps.Map(mapElement, {
+            zoom: 12,
+            center: { lat: 0, lng: 0 },
+            mapTypeId: 'roadmap',
+            mapTypeControl: true,
+            mapTypeControlOptions: {
+                style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
+                position: google.maps.ControlPosition.TOP_RIGHT,
+            },
+        });
 
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; CartoDB'
-        }).addTo(map);
+        const bounds = new google.maps.LatLngBounds();
+        const infoWindow = new google.maps.InfoWindow();
 
-        var assets = @json($assets);
+        assets.forEach(asset => {
+            if (asset.latest_location) {
+                const pos = {
+                    lat: parseFloat(asset.latest_location.latitude),
+                    lng: parseFloat(asset.latest_location.longitude)
+                };
 
-        assets.forEach(function(asset) {
-            var location = asset.latest_location;
-            if (location && location.latitude && location.longitude) {
-                var marker = L.marker([location.latitude, location.longitude]).addTo(map);
-                marker.bindPopup(`
-                    <strong>${asset.name}</strong><br>
-                    Asset code: ${asset.asset_code}<br>
-                    Last seen: ${new Date(location.last_recorded_at).toLocaleString()}<br>
-                    <a href="{{ url('/admin/tracking/asset-history') }}/${asset.id}">View history</a>
-                `);
+                const marker = new google.maps.Marker({
+                    position: pos,
+                    map: map,
+                    title: asset.name,
+                    icon: asset.status === 'active' ? 'http://maps.google.com/mapfiles/ms/icons/green-dot.png' : 'http://maps.google.com/mapfiles/ms/icons/red-dot.png'
+                });
+
+                marker.addListener('click', () => {
+                    const content = `
+                        <div style="padding: 10px; min-width: 200px;">
+                            <h6 class="mb-1">${asset.name}</h6>
+                            <p class="mb-1 small"><strong>Dept:</strong> ${asset.department ? asset.department.name : 'N/A'}</p>
+                            <p class="mb-1 small"><strong>Category:</strong> ${asset.category ? asset.category.name : 'N/A'}</p>
+                            <p class="mb-1 small"><strong>Status:</strong> <span class="badge ${asset.status === 'active' ? 'bg-success' : 'bg-secondary'}">${asset.status}</span></p>
+                            <hr class="my-2">
+                            <p class="mb-0 x-small text-muted">Last Update: ${asset.latest_location.captured_at || asset.latest_location.created_at}</p>
+                        </div>
+                    `;
+                    infoWindow.setContent(content);
+                    infoWindow.open(map, marker);
+                });
+
+                bounds.extend(pos);
             }
         });
-    });
+
+        if (!bounds.isEmpty()) {
+            map.fitBounds(bounds);
+        } else {
+            map.setCenter({ lat: 0, lng: 0 });
+            map.setZoom(2);
+        }
+    }
 </script>
-@endpush
+@endsection
 @endsection

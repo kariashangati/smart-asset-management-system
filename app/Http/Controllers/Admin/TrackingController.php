@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Asset;
+use App\Models\AssetCategory;
+use App\Models\Department;
 use App\Services\LocationService;
 use Illuminate\Http\Request;
 
@@ -16,10 +18,28 @@ class TrackingController extends Controller
         $this->locationService = $locationService;
     }
 
-    public function liveMap()
+    public function liveMap(Request $request)
     {
-        $assets = Asset::with('activeAssignment.trackerDevice', 'latestLocation')->get();
-        return view('admin.tracking.live-map', compact('assets'));
+        $query = Asset::with(['activeAssignment.trackerDevice', 'latestLocation', 'category', 'department']);
+
+        if ($request->filled('department_id')) {
+            $query->where('department_id', $request->department_id);
+        }
+        if ($request->filled('category_id')) {
+            $query->where('asset_category_id', $request->category_id);
+        }
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+        if ($request->boolean('actual')) {
+            $query->has('latestLocation');
+        }
+
+        $assets = $query->get();
+        $departments = Department::all();
+        $categories = AssetCategory::all();
+
+        return view('admin.tracking.live-map', compact('assets', 'departments', 'categories'));
     }
 
     public function history()
