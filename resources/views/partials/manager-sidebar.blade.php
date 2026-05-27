@@ -1,10 +1,15 @@
 <aside class="sidebar">
     <div class="sidebar-header">
         <strong>Asset Manager Portal</strong>
-        <small>Operational monitoring</small>
+        <small>Departmental Oversight</small>
     </div>
 
     <nav class="sidebar-nav">
+        {{-- Main Portal --}}
+        <div class="sidebar-group">
+            <span>Main Portal</span>
+        </div>
+
         {{-- Dashboard --}}
         <a
             href="{{ route('manager.dashboard') }}"
@@ -12,6 +17,21 @@
         >
             Dashboard
         </a>
+
+        {{-- Assets --}}
+        @can('assets.view')
+            <div class="sidebar-group">
+                <span>Assets</span>
+                <small>Asset list and registration</small>
+            </div>
+
+            <a
+                href="{{ route('manager.assets.index') }}"
+                class="nav-link {{ request()->routeIs('manager.assets.*') ? 'active' : '' }}"
+            >
+                My Department Assets
+            </a>
+        @endcan
 
         {{-- Tracking --}}
         @canany(['tracking.live_map.view', 'tracking.history.view'])
@@ -39,36 +59,21 @@
             @endcan
         @endcanany
 
-        {{-- Assets --}}
-        @can('assets.view')
-            <div class="sidebar-group">
-                <span>Assets</span>
-                <small>Asset list and registration</small>
-            </div>
-
-            <a
-                href="{{ route('manager.assets.index') }}"
-                class="nav-link {{ request()->routeIs('manager.assets.*') ? 'active' : '' }}"
-            >
-                My Department Assets
-            </a>
-        @endcan
-
-        {{-- Geofences (actual route) --}}
+        {{-- Geofences --}}
         @can('geofences.view')
             <div class="sidebar-group">
-                <span>Zones</span>
-                <small>Geographical boundaries</small>
+                <span>Environment</span>
+                <small>Zones & Parameters</small>
             </div>
             <a
                 href="{{ route('manager.geofences.index') }}"
                 class="nav-link {{ request()->routeIs('manager.geofences.*') ? 'active' : '' }}"
             >
-                My Geofences
+                Department Zones
             </a>
         @endcan
 
-        {{-- Alerts (actual route) --}}
+        {{-- Alerts --}}
         @can('alerts.view')
             <div class="sidebar-group">
                 <span>Alerts</span>
