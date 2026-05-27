@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\GeofenceController as AdminGeofenceController;
 use App\Http\Controllers\Admin\AlertController as AdminAlertController;
 
 // Manager Controllers
+use App\Http\Controllers\Manager\AssetController as ManagerAssetController;
 use App\Http\Controllers\Manager\GeofenceController as ManagerGeofenceController;
 use App\Http\Controllers\Manager\AlertController as ManagerAlertController;
 
@@ -47,22 +48,22 @@ Route::middleware(['auth', 'active.user'])->group(function () {
         ->group(function () {
 
         /*
-|--------------------------------------------------------------------------
-| Reports (Admin)
-|--------------------------------------------------------------------------
-*/
-Route::prefix('reports')->name('reports.')->group(function () {
-    Route::get('/assets', [App\Http\Controllers\Admin\ReportController::class, 'assets'])->name('assets');
-    Route::get('/tracking', [App\Http\Controllers\Admin\ReportController::class, 'tracking'])->name('tracking');
-    Route::get('/alerts', [App\Http\Controllers\Admin\ReportController::class, 'alerts'])->name('alerts');
-});
+    |--------------------------------------------------------------------------
+    | Reports (Admin)
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('reports')->name('reports.')->group(function () {
+        Route::get('/assets', [App\Http\Controllers\Admin\ReportController::class, 'assets'])->name('assets');
+        Route::get('/tracking', [App\Http\Controllers\Admin\ReportController::class, 'tracking'])->name('tracking');
+        Route::get('/alerts', [App\Http\Controllers\Admin\ReportController::class, 'alerts'])->name('alerts');
+    });
 
-/*
-|--------------------------------------------------------------------------
-| Audit Logs (Admin)
-|--------------------------------------------------------------------------
-*/
-Route::resource('audit-logs', App\Http\Controllers\Admin\AuditLogController::class)->only(['index']);
+    /*
+    |--------------------------------------------------------------------------
+    | Audit Logs (Admin)
+    |--------------------------------------------------------------------------
+    */
+    Route::resource('audit-logs', App\Http\Controllers\Admin\AuditLogController::class)->only(['index']);
 
             Route::get('/dashboard', AdminDashboardController::class)
                 ->name('dashboard');
@@ -366,7 +367,13 @@ Route::resource('audit-logs', App\Http\Controllers\Admin\AuditLogController::cla
             | Assets (Manager)
             |--------------------------------------------------------------------------
             */
-            Route::resource('assets', App\Http\Controllers\Manager\AssetController::class);
+            Route::resource('assets', ManagerAssetController::class)
+                ->middleware('permission:assets.view');
+
+            // Asset details endpoint for AJAX
+            Route::get('/assets/{asset}/details', [ManagerAssetController::class, 'details'])
+                ->middleware('permission:assets.view')
+                ->name('assets.details');
 
             /*
             |--------------------------------------------------------------------------
@@ -404,9 +411,6 @@ Route::resource('audit-logs', App\Http\Controllers\Admin\AuditLogController::cla
             */
             Route::resource('geofences', ManagerGeofenceController::class)
                 ->except(['show']);
-
-
-                
 
             /*
             |--------------------------------------------------------------------------
