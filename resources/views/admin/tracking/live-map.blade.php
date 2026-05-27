@@ -233,27 +233,31 @@
 @endsection
 
 @push('scripts')
-{{-- Inline asset data for the map --}}
-<script>
-    window.__ASSETS__ = @json(
-        $assets->map(function ($asset) {
-            $loc = $asset->latestLocation;
-            return [
-                'id'         => $asset->id,
-                'name'       => $asset->name,
-                'asset_code' => $asset->asset_code,
-                'status'     => $asset->status,
-                'department' => optional($asset->department)->name,
-                'category'   => optional($asset->category)->name,
-                'history_url'=> route('admin.tracking.asset-history', $asset),
-                'lat'        => $loc ? (float) $loc->latitude  : null,
-                'lng'        => $loc ? (float) $loc->longitude : null,
-                'last_seen'  => $loc ? optional($loc->last_recorded_at)->format('d M Y H:i') : null,
-            ];
-        })
-    );
+@php
+    $mapAssets = $assets->map(function ($asset) {
+        $loc = $asset->latestLocation;
 
-    window.GOOGLE_MAPS_API_KEY = "{{ env('GOOGLE_MAPS_API_KEY') }}";
+        return [
+            'id' => $asset->id,
+            'name' => $asset->name,
+            'asset_code' => $asset->asset_code,
+            'status' => $asset->status,
+            'department' => optional($asset->department)->name,
+            'category' => optional($asset->category)->name,
+            'history_url' => route('admin.tracking.asset-history', $asset),
+            'lat' => $loc ? (float) $loc->latitude : null,
+            'lng' => $loc ? (float) $loc->longitude : null,
+            'last_seen' => $loc && $loc->last_recorded_at
+                ? \Carbon\Carbon::parse($loc->last_recorded_at)->format('d M Y H:i')
+                : null,
+        ];
+    });
+@endphp
+
+<script>
+    window.__ASSETS__ = @json($mapAssets);
+
+    window.GOOGLE_MAPS_API_KEY = "{{ config('services.google_maps_key') }}";
 </script>
 
 <script>
