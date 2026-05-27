@@ -202,7 +202,9 @@
 
     {{-- Map or empty state --}}
     @php
-        $assetsWithLocation = $assets->filter(fn($a) => $a->latestLocation);
+        $assetsWithLocation = $assets->filter(function ($a) {
+            return !is_null($a->latestLocation);
+        });
     @endphp
 
     @if($assetsWithLocation->isNotEmpty())
@@ -221,26 +223,31 @@
 @endsection
 
 @push('scripts')
-{{-- Inline asset data for the map --}}
-<script>
-    window.__ASSETS__ = @json(
-        $assets->map(function ($asset) {
-            $loc = $asset->latestLocation;
-            return [
-                'id'         => $asset->id,
-                'name'       => $asset->name,
-                'asset_code' => $asset->asset_code,
-                'status'     => $asset->status,
-                'category'   => optional($asset->category)->name,
-                'history_url'=> route('manager.tracking.asset-history', $asset),
-                'lat'        => $loc ? (float) $loc->latitude  : null,
-                'lng'        => $loc ? (float) $loc->longitude : null,
-                'last_seen'  => $loc ? optional($loc->last_recorded_at)->format('d M Y H:i') : null,
-            ];
-        })
-    );
 
-    window.GOOGLE_MAPS_API_KEY = "{{ env('GOOGLE_MAPS_API_KEY') }}";
+@php
+    $mapAssets = $assets->map(function ($asset) {
+        $loc = $asset->latestLocation;
+
+        return [
+            'id' => $asset->id,
+            'name' => $asset->name,
+            'asset_code' => $asset->asset_code,
+            'status' => $asset->status,
+            'category' => optional($asset->category)->name,
+            'history_url' => route('manager.tracking.asset-history', $asset),
+            'lat' => $loc ? (float) $loc->latitude : null,
+            'lng' => $loc ? (float) $loc->longitude : null,
+            'last_seen' => $loc && $loc->last_recorded_at
+                ? \Carbon\Carbon::parse($loc->last_recorded_at)->format('d M Y H:i')
+                : null,
+        ];
+    });
+@endphp
+
+<script>
+    window.__ASSETS__ = @json($mapAssets);
+
+    window.GOOGLE_MAPS_API_KEY = "{{ config('services.google_maps_key') }}";
 </script>
 
 <script>
@@ -283,7 +290,7 @@
                 + '<span style="color:#64748b;font-size:0.82rem;">' + asset.asset_code + '</span>'
                 + '<hr style="margin:8px 0;border:0;border-top:1px solid #e2e8f0;">'
                 + '<table style="font-size:0.85rem;border-collapse:collapse;width:100%;">'
-                + '<tr><td style="color:#64748b;padding:2px 0;padding-right:8px;">Status</td><td>' + (statusBadge[asset.status] || asset.status) + '</td></tr>'
+                + '<tr><td style="color:#64748b;padding:2px 0;padding-right:8px;">Status</td><td>' + (statusBadge[asset.status] || asset.status) + 'NonNull成长'
                 + (asset.category  ? '<tr><td style="color:#64748b;padding:2px 0;padding-right:8px;">Category</td><td>' + asset.category + '</td></tr>' : '')
                 + (asset.last_seen ? '<tr><td style="color:#64748b;padding:2px 0;padding-right:8px;">Last seen</td><td>' + asset.last_seen + '</td></tr>' : '')
                 + '</table>'
