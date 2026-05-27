@@ -20,6 +20,7 @@ class PasswordResetNotification extends Notification implements ShouldQueue
     {
         $this->resetUrl = $resetUrl;
         $this->onQueue('notifications');
+        $this->onConnection('database'); // Use database queue connection
     }
 
     /**
@@ -36,13 +37,16 @@ class PasswordResetNotification extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Password Reset Request')
-            ->greeting('Password Reset')
+            ->subject('🔐 Password Reset Request - Smart Asset Management')
+            ->greeting('Hello ' . $notifiable->name . ',')
             ->line('You are receiving this email because we received a password reset request for your account.')
-            ->line('This password reset link will expire in 60 minutes.')
+            ->line('**This password reset link will expire in 60 minutes.**')
             ->action('Reset Password', $this->resetUrl)
-            ->line('If you did not request a password reset, no further action is required.')
             ->line('---')
-            ->line('Smart Asset Management System');
+            ->line('If you did not request a password reset, no further action is required.')
+            ->line('If you experience any issues, please contact system administrator.')
+            ->line('---')
+            ->line('Smart Asset Management System Team')
+            ->footer('This is an automated message. Please do not reply to this email.');
     }
 }
