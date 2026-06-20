@@ -15,6 +15,7 @@ class AssetLocationUpdated implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public Asset $asset;
+    public int $trackerDeviceId;
     public float $latitude;
     public float $longitude;
     public float $speed;
@@ -22,10 +23,22 @@ class AssetLocationUpdated implements ShouldBroadcast
 
     /**
      * Create a new event instance.
+     *
+     * FIX (audit #3/#5): added trackerDeviceId as an explicit, required
+     * property. Previously listeners pulled this from $asset->trackerDevice,
+     * a relation that is null for assets assigned through the real admin UI
+     * (which uses the AssetDeviceAssignment pivot, not a direct FK).
      */
-    public function __construct(Asset $asset, float $latitude, float $longitude, float $speed = 0, bool $motionDetected = false)
-    {
+    public function __construct(
+        Asset $asset,
+        int $trackerDeviceId,
+        float $latitude,
+        float $longitude,
+        float $speed = 0,
+        bool $motionDetected = false
+    ) {
         $this->asset = $asset;
+        $this->trackerDeviceId = $trackerDeviceId;
         $this->latitude = $latitude;
         $this->longitude = $longitude;
         $this->speed = $speed;
@@ -54,6 +67,7 @@ class AssetLocationUpdated implements ShouldBroadcast
         return [
             'asset_id' => $this->asset->id,
             'asset_name' => $this->asset->name,
+            'tracker_device_id' => $this->trackerDeviceId,
             'latitude' => $this->latitude,
             'longitude' => $this->longitude,
             'speed' => $this->speed,
