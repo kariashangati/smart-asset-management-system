@@ -43,7 +43,7 @@ class AssetController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'asset_code' => 'required|string|unique:assets,asset_code',
+            'asset_code' => 'nullable|string|unique:assets,asset_code',
             'name' => 'required|string|max:255',
             'asset_category_id' => 'required|exists:asset_categories,id',
             'serial_number' => 'nullable|string',
@@ -52,6 +52,11 @@ class AssetController extends Controller
             'purchase_date' => 'nullable|date',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
+
+        // Auto-generate asset_code if not provided
+        if (empty($validated['asset_code'])) {
+            $validated['asset_code'] = $this->generateAssetCode();
+        }
 
         $validated['department_id'] = Auth::user()->department_id;
 
@@ -156,6 +161,18 @@ class AssetController extends Controller
             'latest_location' => $asset->latestLocation,
             'location_history' => $locationHistory,
         ]);
+    }
+
+    /**
+     * Generate a unique asset code.
+     */
+    protected function generateAssetCode()
+    {
+        $prefix = 'AST';
+        $timestamp = now()->format('YmdHis');
+        $random = strtoupper(substr(uniqid(), -6));
+        
+        return $prefix . '-' . $timestamp . '-' . $random;
     }
 
     /**
