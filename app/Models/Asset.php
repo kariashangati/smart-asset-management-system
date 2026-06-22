@@ -15,10 +15,10 @@ class Asset extends Model
     use HasFactory, LogsActivity;
 
     protected $fillable = [
+        'asset_code',
         'name',
         'description',
         'asset_type',
-        'asset_code',
         'serial_number',
         'status',
         'department_id',
@@ -66,36 +66,11 @@ class Asset extends Model
     }
 
     /**
-     * Direct tracker_device_id relationship.
-     *
-     * NOTE (audit #3): assets.tracker_device_id is NOT set anywhere in the
-     * real admin flow (DeviceAssignmentController uses the AssetDeviceAssignment
-     * pivot instead). This relation is left intact/unchanged so nothing that
-     * currently references it breaks, but it will return null for assets
-     * assigned through the actual app. Code that needs "the device currently
-     * on this asset" should use activeAssignment->trackerDevice instead — see
-     * the fixed WebhookController and LogAssetLocation listener.
+     * Tracker device relationship
      */
     public function trackerDevice(): BelongsTo
     {
         return $this->belongsTo(TrackerDevice::class);
-    }
-
-    /**
-     * All assignment history for this asset (active + ended)
-     */
-    public function assignments(): HasMany
-    {
-        return $this->hasMany(AssetDeviceAssignment::class);
-    }
-
-    /**
-     * Active assignment relationship (already correct, unchanged)
-     */
-    public function activeAssignment(): HasOne
-    {
-        return $this->hasOne(AssetDeviceAssignment::class)
-            ->where('is_active', true);
     }
 
     /**
@@ -123,16 +98,7 @@ class Asset extends Model
     }
 
     /**
-     * FIX (audit #7): This used to be belongsToMany(Geofence::class), implying an
-     * asset_geofence pivot table that is never created or written to anywhere in
-     * the app. The real schema (see Geofence::asset(), admin/geofences views,
-     * GeofenceController) is the other direction: geofences.asset_id -> assets.id,
-     * i.e. one-to-many from Asset's perspective (an asset can accumulate multiple
-     * geofence records over time, only one of which is typically 'active').
-     *
-     * GeofenceService::checkAndCreateAlerts() and AlertService::generateGeofenceAlert()
-     * both call $asset->geofences()->where('status','active'), which works correctly
-     * against a hasMany and previously returned nothing against the unused pivot.
+     * Geofences relationship
      */
     public function geofences(): HasMany
     {
@@ -145,5 +111,22 @@ class Asset extends Model
     public function customAlertRules(): HasMany
     {
         return $this->hasMany(CustomAlertRule::class);
+    }
+
+    /**
+     * Active assignment relationship
+     */
+    public function activeAssignment(): HasOne
+    {
+        return $this->hasOne(AssetDeviceAssignment::class)
+            ->where('is_active', true);
+    }
+
+    /**
+     * All assignment history for this asset (active + ended)
+     */
+    public function assignments(): HasMany
+    {
+        return $this->hasMany(AssetDeviceAssignment::class);
     }
 }
