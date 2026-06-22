@@ -53,15 +53,21 @@ class AssetController extends Controller
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        // Auto-generate asset_code if not provided
+        // Auto-generate asset_code if not provided or empty
         if (empty($validated['asset_code'])) {
             $validated['asset_code'] = $this->generateAssetCode();
         }
 
         $validated['department_id'] = Auth::user()->department_id;
+        $validated['created_by'] = Auth::id();
 
         if ($request->hasFile('image')) {
             $validated['image'] = $request->file('image')->store('assets', 'public');
+        }
+
+        // Ensure asset_code is never null before creating
+        if (empty($validated['asset_code'])) {
+            $validated['asset_code'] = $this->generateAssetCode();
         }
 
         Asset::create($validated);
@@ -112,6 +118,8 @@ class AssetController extends Controller
             'purchase_date' => 'nullable|date',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
+
+        $validated['updated_by'] = Auth::id();
 
         if ($request->hasFile('image')) {
             // Delete old image if exists
@@ -171,8 +179,15 @@ class AssetController extends Controller
         $prefix = 'AST';
         $timestamp = now()->format('YmdHis');
         $random = strtoupper(substr(uniqid(), -6));
+        $code = $prefix . '-' . $timestamp . '-' . $random;
         
-        return $prefix . '-' . $timestamp . '-' . $random;
+        // Ensure uniqueness
+        while (Asset::where('asset_code', $code)->exists()) {
+            $random = strtoupper(substr(uniqid(), -6));
+            $code = $prefix . '-' . $timestamp . '-' . $random;
+        }
+        
+        return $code;
     }
 
     /**
